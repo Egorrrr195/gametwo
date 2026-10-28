@@ -1,0 +1,3659 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>⛽ Симулятор АЗС</title>
+  <style>
+    :root{
+      --bg:#04070d;--panel:#0b1322;--panel2:#111c30;
+      --border:rgba(90,120,175,.14);--border-strong:rgba(90,120,175,.32);
+      --text:#e6edf7;--muted:#7d90b0;
+      --green:#22c55e;--green-l:#4ade80;
+      --cyan:#38bdf8;--blue:#3b82f6;
+      --orange:#f59e0b;--yellow:#facc15;
+      --red:#ef4444;--violet:#a78bfa;
+      --gold:#fbbf24;
+      --ease:cubic-bezier(.4,0,.2,1);
+      --ease-out:cubic-bezier(.16,1,.3,1);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+      background:var(--bg);color:var(--text);overflow:hidden;
+      font-feature-settings:"tnum";-webkit-font-smoothing:antialiased;
+    }
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+    input[type=number]{-moz-appearance:textfield}
+    button{font-family:inherit;outline:none;border:none;background:none;cursor:pointer;color:inherit}
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(90,120,175,.25);border-radius:8px}
+
+    .auth-screen{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;background:radial-gradient(ellipse at 20% 10%,rgba(34,197,94,.14),transparent 55%),radial-gradient(ellipse at 80% 90%,rgba(167,139,250,.14),transparent 55%),linear-gradient(160deg,#04070d 0%,#0a1830 45%,#050a18 100%);overflow-y:auto;transition:opacity .5s var(--ease)}
+    .auth-screen.hidden{opacity:0;pointer-events:none;display:none}
+    .auth-bg-stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(1.4px 1.4px at 8% 12%,#fff,transparent),radial-gradient(1.2px 1.2px at 22% 8%,#cfe4ff,transparent),radial-gradient(1px 1px at 37% 22%,#fff,transparent),radial-gradient(1.4px 1.4px at 52% 6%,#dbeafe,transparent),radial-gradient(1px 1px at 68% 18%,#fff,transparent),radial-gradient(1.4px 1.4px at 82% 9%,#fff,transparent),radial-gradient(1px 1px at 92% 24%,#cfe4ff,transparent),radial-gradient(1.2px 1.2px at 12% 30%,#fff,transparent);opacity:.9;animation:authTwinkle 5s ease-in-out infinite}
+    @keyframes authTwinkle{0%,100%{opacity:.9}50%{opacity:.55}}
+    .auth-moon{position:absolute;top:8%;right:9%;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 34% 32%,#fffef5,#e2e8f0 55%,#94a3b8);box-shadow:0 0 60px 14px rgba(226,232,240,.25);pointer-events:none}
+    .auth-box{position:relative;width:100%;max-width:440px;background:linear-gradient(180deg,rgba(26,40,68,.95),rgba(14,23,41,.98));border:1px solid rgba(90,125,185,.35);border-radius:20px;box-shadow:0 40px 90px rgba(0,0,0,.85),0 0 60px rgba(56,189,248,.12);padding:26px;animation:authIn .5s var(--ease-out);margin:auto}
+    @keyframes authIn{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+    .auth-logo{text-align:center;margin-bottom:20px}
+    .auth-logo-icon{font-size:44px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 6px 20px rgba(34,197,94,.45))}
+    .auth-logo-title{font-weight:900;font-size:22px;letter-spacing:1.5px;background:linear-gradient(120deg,#22c55e,#38bdf8 55%,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .auth-logo-sub{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.6px;margin-top:4px}
+    .auth-tabs{display:flex;gap:6px;padding:5px;background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:11px;margin-bottom:18px}
+    .auth-tab{flex:1;padding:9px;border-radius:8px;font-size:12px;font-weight:800;letter-spacing:.4px;color:var(--muted);transition:all .25s var(--ease);text-transform:uppercase}
+    .auth-tab:hover:not(.active){color:#cbd5e1}
+    .auth-tab.active{background:linear-gradient(180deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 4px 14px rgba(59,130,246,.35)}
+    .auth-form{display:none}
+    .auth-form.active{display:block}
+    .auth-field{margin-bottom:12px}
+    .auth-field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:800;margin-bottom:6px}
+    .auth-field input{width:100%;padding:12px 14px;background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:10px;color:#fff;font-size:13.5px;font-family:inherit;transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
+    .auth-field input:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+    .auth-hint{font-size:10.5px;color:var(--muted);margin-top:-4px;margin-bottom:10px;padding-left:2px;line-height:1.4}
+    .auth-error{color:#f87171;font-size:12px;font-weight:700;min-height:18px;text-align:center;margin-bottom:10px}
+    .auth-submit{width:100%;padding:14px;border-radius:11px;font-size:14px;font-weight:800;letter-spacing:.4px;background:linear-gradient(180deg,#22c55e,#16a34a);color:#04240f;transition:transform .15s var(--ease-out),filter .2s var(--ease);box-shadow:0 6px 20px rgba(34,197,94,.4),inset 0 1px 0 rgba(255,255,255,.35)}
+    .auth-submit:hover{filter:brightness(1.12);transform:translateY(-1px)}
+    .auth-footer{text-align:center;font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.5}
+    .auth-staff-hint{margin-top:16px;padding:12px 14px;background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(251,191,36,.08));border:1px dashed rgba(120,155,215,.35);border-radius:11px;font-size:10.5px;line-height:1.65;color:#a8b8d4}
+    .auth-staff-hint strong{color:#cbd5e1;display:block;margin-bottom:4px;font-size:11px;letter-spacing:.4px}
+    .auth-staff-hint code{background:rgba(0,0,0,.4);padding:1px 5px;border-radius:4px;font-family:ui-monospace,'SF Mono',Menlo,monospace;color:#7dd3fc;font-size:10px}
+    .auth-quick{display:flex;gap:6px;margin-top:8px}
+    .auth-quick button{flex:1;padding:7px 10px;border-radius:7px;font-size:10.5px;font-weight:800;letter-spacing:.3px;background:rgba(30,43,71,.9);border:1px solid rgba(120,155,215,.3);color:#cbd5e1;transition:all .2s var(--ease)}
+    .auth-quick button:hover{background:rgba(45,68,110,.95);color:#fff}
+    .auth-quick button.cyan:hover{border-color:#38bdf8;color:#7dd3fc}
+
+    .app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+    .app.hidden{display:none}
+
+    .topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;background:linear-gradient(180deg,#101a2e,#080e1a);border-bottom:1px solid var(--border);position:relative;z-index:20;flex-wrap:wrap;flex:none}
+    .brand{font-weight:900;font-size:14px;letter-spacing:1.2px;display:flex;align-items:center;gap:8px;white-space:nowrap;background:linear-gradient(120deg,#22c55e,#38bdf8 55%,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .brand-dot{width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 32% 32%,#a7f3d0,#22c55e);box-shadow:0 0 10px #22c55e;animation:dotPulse 2.4s ease-in-out infinite}
+    @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+    .stats{display:flex;gap:7px;flex-wrap:wrap;flex:1;min-width:0}
+    .stat{padding:5px 11px;border-radius:9px;background:rgba(255,255,255,.025);border:1px solid var(--border);transition:border-color .25s var(--ease),background .25s var(--ease);min-width:0}
+    .stat:hover{border-color:var(--border-strong);background:rgba(255,255,255,.045)}
+    .stat-l{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;line-height:1.2}
+    .stat-v{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.25;white-space:nowrap;transition:color .35s var(--ease)}
+    .stat-v.pos{color:#4ade80}.stat-v.neg{color:#f87171}.stat-v.warn{color:#fbbf24}
+    .stat-v.gold{color:#fbbf24;text-shadow:0 0 12px rgba(251,191,36,.5)}
+
+    .user-chip{display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:11.5px;font-weight:700;white-space:nowrap;cursor:pointer;transition:background .2s var(--ease),border-color .2s var(--ease)}
+    .user-chip:hover{background:rgba(220,38,38,.15);border-color:rgba(248,113,113,.4)}
+    .user-chip .role{font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:2px 6px;border-radius:4px;font-weight:800}
+    .user-chip .role.admin{background:rgba(56,189,248,.25);color:#7dd3fc}
+    .user-chip .role.founder{background:rgba(251,191,36,.25);color:#fcd34d}
+    .user-chip .role.user{background:rgba(120,155,215,.2);color:#9fb3d4}
+    .user-chip .exit-icon{color:#f87171;font-weight:800;font-size:11px}
+
+    .day-progress{position:absolute;left:0;bottom:-1px;height:3px;width:100%;background:rgba(30,45,75,.5);overflow:hidden;pointer-events:none}
+    .day-progress-fill{height:100%;width:0;background:linear-gradient(90deg,#22c55e,#38bdf8 50%,#a78bfa);transition:width .2s linear}
+
+    .main{flex:1;display:grid;grid-template-columns:1fr 400px;overflow:hidden;min-height:0}
+    .scene{position:relative;overflow:hidden;min-height:0;background:#04070d;width:100%;height:100%}
+    #scene-canvas{display:block;width:100%;height:100%}
+
+    .vip-banner{position:absolute;top:9%;left:50%;transform:translateX(-50%) translateY(-160%) scale(.85);padding:11px 34px;border-radius:11px;background:linear-gradient(135deg,#fef3c7 0%,#fcd34d 22%,#f59e0b 48%,#fbbf24 72%,#fef3c7 100%);border:1.5px solid rgba(255,255,255,.65);box-shadow:0 10px 40px rgba(251,191,36,.55),0 0 80px rgba(251,191,36,.35),inset 0 1px 0 rgba(255,255,255,.75);font-weight:900;font-size:15px;letter-spacing:3.5px;color:#451a03;white-space:nowrap;opacity:0;pointer-events:none;z-index:35}
+    .vip-banner.show{animation:vipShow 3.6s var(--ease-out) forwards}
+    @keyframes vipShow{0%{transform:translateX(-50%) translateY(-160%) scale(.85);opacity:0}10%{transform:translateX(-50%) translateY(0) scale(1.06);opacity:1}16%{transform:translateX(-50%) translateY(0) scale(1);opacity:1}26%{transform:translateX(-50%) translateY(0) scale(1);opacity:1}84%{transform:translateX(-50%) translateY(0) scale(1);opacity:1}100%{transform:translateX(-50%) translateY(-160%) scale(.85);opacity:0}}
+    .vip-banner .vip-stars{display:inline-block;margin:0 6px}
+    .vip-banner .vip-sub{display:block;font-size:8.5px;letter-spacing:2.4px;color:#78350f;margin-top:2px;font-weight:800}
+
+    .vip-flash{position:absolute;inset:0;pointer-events:none;z-index:25;background:radial-gradient(ellipse at center top,rgba(251,191,36,.32),transparent 65%);opacity:0}
+    .vip-flash.show{animation:vipFlash 1.2s var(--ease-out) forwards}
+    @keyframes vipFlash{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+
+    .vip-hud{position:absolute;top:16px;right:18px;z-index:28;padding:6px 12px;border-radius:8px;background:linear-gradient(135deg,rgba(254,243,199,.95),rgba(251,191,36,.95));border:1px solid rgba(255,255,255,.6);box-shadow:0 4px 18px rgba(251,191,36,.4);color:#451a03;font-weight:900;font-size:10.5px;letter-spacing:1.6px;opacity:0;transform:translateY(-8px) scale(.9);transition:opacity .35s var(--ease),transform .35s var(--ease-out);pointer-events:none}
+    .vip-hud.on{opacity:1;transform:translateY(0) scale(1)}
+    .vip-hud .vip-hud-num{font-size:14px;margin-left:4px}
+
+    .event-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0;transition:opacity 1s var(--ease);background:radial-gradient(ellipse at center bottom,var(--event-tint,transparent),transparent 70%)}
+    .event-overlay.on{opacity:1}
+
+    .event-circle{position:absolute;top:84px;right:18px;width:56px;height:56px;border-radius:50%;z-index:30;background:linear-gradient(135deg,rgba(30,43,71,.96),rgba(17,28,48,.96));border:2px solid var(--event-color,#f59e0b);box-shadow:0 0 22px var(--event-glow,rgba(245,158,11,.55)),0 6px 20px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;transform:scale(0);opacity:0;pointer-events:none;transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .3s var(--ease)}
+    .event-circle.on{transform:scale(1);opacity:1;pointer-events:auto}
+    .event-circle:hover{box-shadow:0 0 32px var(--event-glow,rgba(245,158,11,.7)),0 8px 24px rgba(0,0,0,.6)}
+    .event-circle-icon{font-size:24px;line-height:1;z-index:2;filter:drop-shadow(0 2px 5px rgba(0,0,0,.7))}
+    .event-circle-ring{position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(from -90deg,var(--event-color,#f59e0b) calc(var(--progress,100) * 3.6deg),rgba(255,255,255,.08) 0);-webkit-mask:radial-gradient(circle,transparent 30px,#000 31px);mask:radial-gradient(circle,transparent 30px,#000 31px);pointer-events:none;z-index:0}
+
+    .role-controls{position:absolute;top:84px;left:18px;z-index:30;display:flex;flex-direction:column;gap:10px;transition:transform .4s var(--ease-out),opacity .3s var(--ease)}
+    .role-controls.hidden{opacity:0;pointer-events:none;transform:translateX(-20px)}
+    .role-btn{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;cursor:pointer;position:relative;transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+    .admin-open{background:linear-gradient(135deg,rgba(30,55,110,.96),rgba(15,30,65,.96));border:2px solid #38bdf8;box-shadow:0 0 20px rgba(56,189,248,.5),0 6px 20px rgba(0,0,0,.55)}
+    .admin-open:hover{transform:translateY(-2px) scale(1.05)}
+    .founder-open{background:linear-gradient(135deg,rgba(90,55,15,.96),rgba(45,25,5,.96));border:2px solid #fbbf24;box-shadow:0 0 22px rgba(251,191,36,.6),0 6px 20px rgba(0,0,0,.55)}
+    .founder-open:hover{transform:translateY(-2px) scale(1.05)}
+    .hide-toggle{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,rgba(30,43,71,.85),rgba(17,28,48,.85));border:1.5px solid rgba(120,155,215,.4);color:#9fb3d4;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .hide-toggle:hover{color:#fff;transform:scale(1.08)}
+    .unhide-tab{position:absolute;top:84px;left:0;z-index:31;width:26px;height:44px;border-radius:0 9px 9px 0;background:linear-gradient(135deg,rgba(30,43,71,.9),rgba(17,28,48,.9));border:1.5px solid rgba(120,155,215,.4);border-left:none;color:#9fb3d4;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .3s var(--ease)}
+    .unhide-tab.on{opacity:1;pointer-events:auto}
+
+    .gmodal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(2,5,11,.75);opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
+    .gmodal.show{opacity:1;pointer-events:auto}
+    .gmodal-box{width:100%;max-height:calc(100vh - 32px);background:linear-gradient(180deg,#1a2844,#0e1729);border:1px solid rgba(90,125,185,.35);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.85);transform:scale(.94) translateY(10px);transition:transform .35s var(--ease-out);display:flex;flex-direction:column;overflow:hidden}
+    .gmodal.show .gmodal-box{transform:scale(1) translateY(0)}
+
+    .event-modal-box{width:100%;max-width:440px;padding:22px;overflow-y:auto;transform:scale(.05);transition:transform .6s cubic-bezier(.16,1,.3,1)}
+    .event-modal.show .event-modal-box{transform:scale(1)}
+    .event-modal-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(120,155,215,.16)}
+    .event-modal-icon{font-size:28px;width:52px;height:52px;flex:none;border-radius:13px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(120,155,215,.3);background:linear-gradient(135deg,rgba(56,189,248,.18),rgba(56,189,248,.08))}
+    .event-modal-title{font-size:17px;font-weight:900;line-height:1.2;color:#fff}
+    .event-modal-sub{font-size:11.5px;color:var(--muted);margin-top:4px;font-weight:600}
+    .event-modal-desc{font-size:12.5px;line-height:1.65;color:#c5d3ea;margin-bottom:16px;padding:12px 14px;background:rgba(0,0,0,.28);border-radius:11px;border-left:3px solid var(--event-color,#f59e0b)}
+    .event-modal-timer{margin-bottom:14px}
+    .event-timer-label{font-size:9.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:800;margin-bottom:6px}
+    .event-timer-bar{height:6px;background:rgba(0,0,0,.55);border-radius:4px;overflow:hidden}
+    .event-timer-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--event-color,#f59e0b),var(--event-color-l,#fcd34d));transition:width .2s linear}
+    .event-timer-text{font-size:11px;color:var(--muted);font-weight:700;margin-top:5px;text-align:right;font-variant-numeric:tabular-nums}
+    .event-modal-effects{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+    .event-effect{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;background:rgba(0,0,0,.24);border:1px solid rgba(120,155,215,.12);font-size:12px;font-weight:600}
+    .event-effect.good{border-color:rgba(74,222,128,.28);background:rgba(34,197,94,.08)}
+    .event-effect.bad{border-color:rgba(248,113,113,.28);background:rgba(239,68,68,.08)}
+    .event-effect-icon{font-size:16px;flex:none;width:22px;text-align:center}
+    .event-effect.good .event-effect-text{color:#86efac}
+    .event-effect.bad .event-effect-text{color:#fca5a5}
+    .event-modal-close{width:100%;padding:13px;border-radius:11px;font-size:13.5px;font-weight:800;color:#04240f;background:linear-gradient(180deg,#22c55e,#16a34a);box-shadow:0 5px 16px rgba(34,197,94,.32)}
+    .event-modal-close:hover{filter:brightness(1.12);transform:translateY(-1px)}
+
+    .apanel-box{max-width:680px}
+    .apanel-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border);flex:none}
+    .apanel-icon{font-size:22px;width:44px;height:44px;flex:none;border-radius:11px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(56,189,248,.4);background:linear-gradient(135deg,rgba(56,189,248,.22),rgba(56,189,248,.08))}
+    .apanel-box.founder-theme .apanel-icon{border-color:rgba(251,191,36,.5);background:linear-gradient(135deg,rgba(251,191,36,.24),rgba(251,191,36,.08))}
+    .apanel-titles{flex:1;min-width:0}
+    .apanel-title{font-size:15px;font-weight:900}
+    .apanel-sub{font-size:11px;color:var(--muted);margin-top:2px;font-weight:600}
+    .apanel-close{width:32px;height:32px;border-radius:8px;background:rgba(30,43,71,.7);color:#9fb3d4;font-size:16px;display:flex;align-items:center;justify-content:center;flex:none}
+    .apanel-close:hover{background:rgba(220,38,38,.8);color:#fff}
+    .apanel-close.logout{background:rgba(220,38,38,.25);color:#fca5a5}
+
+    .apanel-tabs{display:flex;gap:0;padding:0 20px;flex:none;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+    .apanel-tabs::-webkit-scrollbar{display:none}
+    .atab{padding:11px 14px;font-size:11.5px;font-weight:800;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;text-transform:uppercase;letter-spacing:.4px}
+    .atab.active{color:#fff;border-bottom-color:var(--cyan)}
+    .apanel-box.founder-theme .atab.active{border-bottom-color:var(--gold)}
+
+    .apanel-body{flex:1;overflow-y:auto;padding:18px 20px;display:none}
+    .apanel-body.active{display:block}
+    .ap-section{background:linear-gradient(180deg,rgba(17,28,48,.7),rgba(11,19,34,.7));border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+    .ap-section h4{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+    .ap-section h4::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+    .apanel-box.founder-theme .ap-section h4::before{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+    .ap-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .ap-row:last-child{margin-bottom:0}
+    .ap-row label{flex:1;font-size:12px;font-weight:600;color:#c3d2e8;min-width:0}
+    .ap-row input, .ap-row select{width:120px;padding:8px 10px;background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:7px;color:#fff;font-size:12.5px;text-align:center;font-weight:700}
+    .ap-btn{padding:8px 14px;border-radius:8px;font-size:11.5px;font-weight:800;white-space:nowrap;background:linear-gradient(180deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 3px 10px rgba(59,130,246,.25)}
+    .ap-btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+    .ap-btn.green{background:linear-gradient(180deg,#22c55e,#16a34a);color:#04240f}
+    .ap-btn.red{background:linear-gradient(180deg,#ef4444,#dc2626)}
+    .ap-btn.gold{background:linear-gradient(180deg,#fbbf24,#d97706);color:#2a1600}
+    .ap-btn.violet{background:linear-gradient(180deg,#a78bfa,#7c3aed)}
+    .ap-btn.dim{background:rgba(36,51,82,.85);color:#94a7c4;box-shadow:none}
+    .ap-btn.full{width:100%;padding:11px;font-size:12.5px}
+    .ap-btn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+    .ap-event-btn{padding:11px 12px;border-radius:10px;background:rgba(30,43,71,.85);border:1px solid rgba(120,155,215,.25);color:#dbe7f7;font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:8px;text-align:left}
+    .ap-event-btn:hover{background:rgba(45,68,110,.9);border-color:var(--cyan);transform:translateY(-1px)}
+    .ap-event-btn .ap-ico{font-size:16px}
+    .ap-event-btn .ap-txt{flex:1;line-height:1.2}
+    .ap-event-btn .ap-txt small{display:block;font-size:9.5px;color:var(--muted);margin-top:2px}
+    .ausers-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+    .ausers-table th{text-align:left;padding:9px 10px;background:rgba(0,0,0,.28);color:var(--muted);font-weight:800;font-size:9.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+    .ausers-table td{padding:9px 10px;border-bottom:1px solid rgba(120,155,215,.07);font-variant-numeric:tabular-nums}
+    .arole-badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:9.5px;font-weight:900;text-transform:uppercase}
+    .arole-badge.user{background:rgba(120,155,215,.22);color:#9fb3d4}
+    .arole-badge.admin{background:rgba(56,189,248,.28);color:#7dd3fc}
+    .arole-badge.founder{background:rgba(251,191,36,.28);color:#fcd34d}
+    .arole-badge.you{background:rgba(74,222,128,.28);color:#86efac}
+    .ap-stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+    .ap-stat-box{background:rgba(0,0,0,.28);border:1px solid rgba(120,155,215,.15);border-radius:10px;padding:10px 12px}
+    .ap-stat-box .ap-slabel{font-size:9px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);font-weight:800;margin-bottom:4px}
+    .ap-stat-box .ap-svalue{font-size:15px;font-weight:900;font-variant-numeric:tabular-nums}
+    .ap-stat-box.gold .ap-svalue{color:var(--gold)}
+    .ap-stat-box.green .ap-svalue{color:#4ade80}
+    .ap-stat-box.cyan .ap-svalue{color:var(--cyan)}
+    .ap-stat-box.violet .ap-svalue{color:var(--violet)}
+    .ap-save-status{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;margin-top:8px;background:rgba(0,0,0,.28);border:1px solid rgba(120,155,215,.15);border-radius:9px;font-size:11px;font-weight:700;color:#94a7c4}
+    .ap-save-status .ok{color:#86efac}
+    .ap-save-status .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;margin-right:6px}
+    .ap-danger-note{font-size:10.5px;color:var(--muted);margin-top:6px;line-height:1.4}
+
+    .panel{background:linear-gradient(180deg,#0b1322,#070c17);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+    .log-wrap{padding:11px 13px 10px;border-bottom:1px solid var(--border)}
+    .log-title{font-size:10px;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);font-weight:800;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+    .log-title::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+    .log{height:98px;overflow-y:auto;font-size:11.5px;line-height:1.5;background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:9px;padding:7px 10px}
+    .log-line{padding:2px 0;color:#b9c8e2;border-bottom:1px dashed rgba(120,155,215,.07)}
+    .log-line.good{color:#86efac}
+    .log-line.bad{color:#fca5a5}
+    .log-line.warn{color:#fde68a}
+    .log-line.event{color:#fde68a;font-weight:700;background:linear-gradient(90deg,rgba(251,191,36,.14),transparent);border-radius:5px;padding:3px 6px}
+    .log-line.vip{color:#fde68a;font-weight:700;background:linear-gradient(90deg,rgba(251,191,36,.12),transparent);border-radius:5px;padding:3px 6px}
+    .log-line.admin{color:#7dd3fc;font-weight:700;background:linear-gradient(90deg,rgba(56,189,248,.14),transparent);border-radius:5px;padding:3px 6px}
+    .log-day{color:#5b7099;font-weight:800;margin-right:6px;font-size:9.5px;padding:1px 5px;border-radius:4px;background:rgba(90,120,175,.12)}
+    .log-day.event-day{background:rgba(245,158,11,.22);color:#fcd34d}
+    .log-day.vip-day{background:rgba(251,191,36,.22);color:#fcd34d}
+    .log-day.admin-day{background:rgba(56,189,248,.22);color:#7dd3fc}
+
+    .tabs{display:flex;gap:5px;padding:10px 12px 0}
+    .tab{flex:1;padding:10px 8px;border-radius:9px 9px 0 0;border:1px solid var(--border);border-bottom:none;background:rgba(8,14,26,.6);color:var(--muted);font-weight:800;font-size:11.5px;letter-spacing:.4px;cursor:pointer;text-transform:uppercase}
+    .tab.active{background:var(--panel2);color:#fff}
+    .tab:hover:not(.active){color:#cbd5e1}
+
+    .tab-body{flex:1;overflow-y:auto;padding:13px;display:none;min-height:0}
+    .tab-body.active{display:block}
+
+    .fuel{background:linear-gradient(180deg,rgba(17,28,48,.7),rgba(11,19,34,.7));border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;position:relative;overflow:hidden}
+    .fuel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fc,#22c55e);box-shadow:0 0 10px var(--fc,#22c55e)}
+    .fuel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 8px currentColor}
+    .fuel-name{font-weight:800;font-size:13.5px}
+    .fuel-amt{margin-left:auto;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:600}
+    .bar{height:6px;background:rgba(0,0,0,.6);border-radius:4px;overflow:hidden;margin-bottom:10px}
+    .bar-fill{height:100%;border-radius:4px}
+    .fuel-body{display:flex;gap:10px;margin-bottom:9px;align-items:flex-end}
+    .fuel-col{flex:1;min-width:0}
+    .fuel-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px;font-weight:700}
+    .market{font-size:13.5px;font-weight:800;color:#cbd5e1;font-variant-numeric:tabular-nums}
+    .margin{font-size:10.5px;margin-top:2px;font-weight:800;font-variant-numeric:tabular-nums}
+    .price-ctl{display:flex;align-items:center;background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .price-ctl:focus-within{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+    .price-ctl input{width:100%;min-width:0;background:transparent;border:none;color:#fff;font-weight:800;font-size:13.5px;text-align:center;padding:6px 0;font-variant-numeric:tabular-nums;font-family:inherit}
+    .price-ctl button{background:rgba(25,38,62,.9);color:#9fb3d4;font-weight:900;font-size:15px;width:26px;height:30px;flex:none}
+    .price-ctl button:hover{background:rgba(45,68,110,.95);color:#fff}
+    .buy-row{display:flex;gap:7px}
+    .buy-btn{flex:1;padding:8px 6px;border-radius:8px;border:1px solid rgba(70,100,155,.28);background:rgba(25,38,62,.7);color:#dbe7f7;font-weight:700;font-size:11px;cursor:pointer}
+    .buy-btn:hover:not(:disabled){background:rgba(40,70,120,.9);border-color:var(--cyan)}
+    .buy-btn:disabled{opacity:.35;cursor:not-allowed}
+    .hint{font-size:11px;color:var(--muted);line-height:1.55;padding:5px 4px}
+    .hint b{color:#4ade80}
+    .hint .gold{color:#fbbf24}
+    .upg{display:flex;gap:11px;align-items:center;background:linear-gradient(180deg,rgba(17,28,48,.7),rgba(11,19,34,.7));border:1px solid var(--border);border-radius:12px;padding:10px 11px;margin-bottom:9px}
+    .upg-ico{font-size:20px;width:38px;height:38px;flex:none;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(56,189,248,.14),rgba(167,139,250,.09));border:1px solid rgba(120,155,215,.18)}
+    .upg-info{flex:1;min-width:0}
+    .upg-name{font-weight:800;font-size:12.5px}
+    .upg-desc{font-size:10.5px;color:var(--muted);margin-top:2px}
+    .upg-pips{display:flex;gap:3px;margin-top:6px}
+    .pip{width:14px;height:4px;border-radius:2px;background:rgba(37,52,79,.9)}
+    .pip.on{background:linear-gradient(90deg,#22c55e,#4ade80);box-shadow:0 0 6px rgba(74,222,128,.55)}
+    .upg-buy{border:none;border-radius:9px;padding:9px 10px;font-weight:800;font-size:10.5px;cursor:pointer;background:linear-gradient(180deg,#22c55e,#16a34a);color:#04240f;flex:none;font-variant-numeric:tabular-nums}
+    .upg-buy:hover:not(:disabled){filter:brightness(1.13);transform:translateY(-1px)}
+    .upg-buy:disabled{background:rgba(36,51,82,.85);color:#5c7196;cursor:not-allowed}
+    .ad{background:linear-gradient(135deg,rgba(30,43,71,.9),rgba(17,28,48,.85));border:1px dashed rgba(59,130,246,.45);border-radius:12px;padding:12px;margin-bottom:10px}
+    .ad-title{font-size:12.5px;font-weight:800;margin-bottom:3px}
+    .ad-desc{font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:9px}
+    .btn-primary{width:100%;padding:10px;border-radius:9px;font-weight:800;font-size:12px;color:#fff;background:linear-gradient(180deg,#3b82f6,#2563eb)}
+    .btn-primary:hover:not(:disabled){filter:brightness(1.12);transform:translateY(-1px)}
+    .btn-primary:disabled{background:rgba(36,51,82,.85);color:#5c7196;cursor:not-allowed}
+
+    .modal{position:fixed;inset:0;background:rgba(2,5,11,.85);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
+    .modal.show{opacity:1;pointer-events:auto}
+    .modal-box{background:linear-gradient(180deg,#182642,#0e1729);border:1px solid rgba(90,125,185,.32);border-radius:16px;padding:22px;width:100%;max-width:400px;transform:scale(.94) translateY(8px);transition:transform .3s var(--ease-out)}
+    .modal.show .modal-box{transform:scale(1) translateY(0)}
+    .modal-box h2{margin-bottom:16px;font-size:17px;text-align:center;font-weight:800;background:linear-gradient(120deg,#38bdf8,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .rep-rows{display:flex;flex-direction:column;gap:1px;background:rgba(80,110,170,.16);border-radius:11px;overflow:hidden;margin-bottom:16px}
+    .rep-row{display:flex;justify-content:space-between;padding:10px 14px;background:rgba(17,28,48,.9);font-size:12.5px}
+    .rep-row span:last-child{font-weight:800;font-variant-numeric:tabular-nums}
+    .rep-row.total{background:rgba(24,40,66,.95);font-size:14.5px}
+    .rep-row.vip-row{background:linear-gradient(90deg,rgba(251,191,36,.14),rgba(17,28,48,.9))}
+    .rep-row.vip-row span:last-child{color:#fbbf24}
+    .pos{color:#4ade80}.neg{color:#f87171}
+    .modal-box .btn-primary{padding:13px;font-size:13.5px;border-radius:10px}
+    .modal-box .btn-primary.danger{background:linear-gradient(180deg,#ef4444,#dc2626)}
+
+    #toasts{position:fixed;top:64px;right:16px;z-index:90;display:flex;flex-direction:column;gap:7px;pointer-events:none;max-width:290px}
+    .toast{background:linear-gradient(135deg,#182642,#0e1729);border:1px solid rgba(90,125,185,.3);border-radius:11px;padding:9px 13px;font-size:12px;font-weight:600;color:#dbe7f7;box-shadow:0 10px 26px rgba(0,0,0,.5);animation:toastIn .35s var(--ease-out)}
+    .toast.out{animation:toastOut .3s var(--ease) forwards}
+    .toast.good{border-color:rgba(74,222,128,.42)}
+    .toast.bad{border-color:rgba(248,113,113,.42)}
+    .toast.warn{border-color:rgba(250,204,21,.42)}
+    .toast.event{border-color:rgba(251,191,36,.7);background:linear-gradient(135deg,rgba(69,26,3,.95),rgba(30,15,5,.95));color:#fde68a;font-weight:800}
+    .toast.vip{border-color:rgba(251,191,36,.75);background:linear-gradient(135deg,rgba(69,26,3,.95),rgba(30,15,5,.95));color:#fde68a;font-weight:800}
+    .toast.admin{border-color:rgba(56,189,248,.75);background:linear-gradient(135deg,rgba(15,30,65,.95),rgba(8,17,36,.95));color:#bae6fd;font-weight:800}
+    @keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+    @keyframes toastOut{to{opacity:0;transform:translateX(40px)}}
+
+    @media(max-width:940px){
+      .main{grid-template-columns:1fr;grid-template-rows:46vh 1fr}
+      .panel{border-left:none;border-top:1px solid var(--border)}
+      .log{height:64px}
+      .brand{font-size:12px}
+      .stat{padding:4px 8px}
+      .stat-v{font-size:13px}
+      .stats{gap:5px}
+      #toasts{top:auto;bottom:14px;right:14px;left:14px;max-width:none}
+      .event-circle{top:72px;right:12px;width:50px;height:50px}
+      .role-controls{top:72px;left:12px;gap:8px}
+      .role-btn{width:46px;height:46px;font-size:19px}
+      .hide-toggle{width:34px;height:34px}
+      .unhide-tab{top:72px}
+      .user-chip{display:none}
+    }
+
+    /* Mobile topbar layout fix: compact header and three-column stats */
+    @media (max-width: 940px) {
+      .topbar {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 7px !important;
+        padding: 8px 10px 9px !important;
+        align-items: center;
+        flex-wrap: nowrap !important;
+      }
+      .brand {
+        font-size: 13px !important;
+        line-height: 1.2;
+        letter-spacing: 1px;
+        min-height: 20px;
+      }
+      .brand-dot { width: 8px; height: 8px; flex: 0 0 8px; }
+      .stats {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 5px !important;
+        width: 100%;
+        min-width: 0;
+      }
+      .stat {
+        padding: 5px 7px !important;
+        min-width: 0;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .stat-l { font-size: 9px !important; letter-spacing: .6px; line-height: 1.15; }
+      .stat-v { font-size: 14px !important; line-height: 1.2; }
+      .user-chip { display: none !important; }
+    }
+    @media (max-width: 380px) {
+      .topbar { padding: 6px 8px 7px !important; gap: 5px !important; }
+      .brand { font-size: 12px !important; }
+      .stat { padding: 4px 5px !important; }
+      .stat-l { font-size: 8px !important; }
+      .stat-v { font-size: 12px !important; }
+    }
+
+
+    /* Mobile scrolling repair: keep compact header while allowing touch scrolling */
+    html, body { height:100%; min-height:100%; }
+    body { overscroll-behavior:none; }
+    .app { height:100vh; height:100dvh; min-height:0; overflow:hidden; }
+    .main { min-height:0; height:auto; }
+    .panel { min-height:0; height:100%; }
+    .tab-body.active, .apanel-body.active {
+      display:block;
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto !important;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior-y:contain;
+      touch-action:pan-y;
+    }
+    @media (max-width:940px) {
+      .main { grid-template-rows:46vh minmax(0, 1fr) !important; }
+      .panel { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+      .tabs, .panel-tabs { flex:0 0 auto; }
+      .tab-body.active, .apanel-body.active { min-height:0; }
+    }
+
+
+    /* Android WebView: force document-level scrolling on phones */
+    @media screen and (max-width: 940px) {
+      html { height:auto !important; min-height:100% !important; overflow:visible !important; }
+      body { height:auto !important; min-height:100% !important; overflow-x:hidden !important; overflow-y:scroll !important; position:relative !important; touch-action:pan-y !important; }
+      #appRoot, .app, .app:not(.hidden) { display:block !important; height:auto !important; min-height:100vh !important; min-height:100dvh !important; overflow:visible !important; }
+      .topbar { position:relative !important; height:auto !important; }
+      .main { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+      .scene { display:block !important; position:relative !important; width:100% !important; height:42vh !important; min-height:220px !important; max-height:380px !important; overflow:hidden !important; }
+      .panel { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+      .log-wrap { height:auto !important; }
+      .log { max-height:100px !important; }
+      .tabs, .panel-tabs, .apanel-tabs { position:relative !important; }
+      .tab-body.active { display:block !important; height:auto !important; max-height:none !important; min-height:0 !important; overflow:visible !important; }
+      .tab-body:not(.active) { display:none !important; }
+      .apanel-body.active { display:block !important; height:auto !important; max-height:none !important; overflow:visible !important; }
+      .auth-screen { position:absolute !important; min-height:100vh !important; height:auto !important; overflow-y:visible !important; align-items:flex-start !important; }
+      .auth-box { margin:20px auto !important; }
+    }
+
+    /* Кнопка выхода из аккаунта в верхнем меню */
+    .menu-logout-btn{border:1px solid rgba(248,113,113,.55);background:rgba(127,29,29,.28);color:#fecaca;border-radius:10px;padding:9px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex:none}
+    .menu-logout-btn:active{transform:scale(.97);background:rgba(127,29,29,.5)}
+    @media(max-width:600px){.menu-logout-btn{padding:8px;font-size:11px}.topbar{gap:6px}.user-chip{max-width:34%;overflow:hidden}}
+  </style>
+</head>
+<body>
+
+<div class="auth-screen" id="authScreen">
+  <div class="auth-bg-stars"></div>
+  <div class="auth-moon"></div>
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">⛽</div>
+      <div class="auth-logo-title">СИМУЛЯТОР АЗС</div>
+      <div class="auth-logo-sub">Создай аккаунт и стань основателем сети</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabRegister">Регистрация</button>
+      <button class="auth-tab" id="tabLogin">Вход</button>
+    </div>
+    <form class="auth-form active" id="formRegister" onsubmit="event.preventDefault();doRegister();">
+      <div class="auth-field"><label for="regLogin">Логин</label><input id="regLogin" type="text" maxlength="20" placeholder="Введите логин"></div>
+      <div class="auth-hint">3–20 символов: буквы, цифры, _ и -</div>
+      <div class="auth-field"><label for="regPass">Пароль</label><input id="regPass" type="password" maxlength="50" placeholder="Минимум 4 символа"></div>
+      <div class="auth-field"><label for="regPass2">Повторите пароль</label><input id="regPass2" type="password" maxlength="50" placeholder="Повторите пароль"></div>
+      <div class="auth-error" id="regError"></div>
+      <button type="submit" class="auth-submit">🚀 Создать аккаунт</button>
+      <div class="auth-footer">Аккаунт сохранится в браузере.<br>При следующем заходе ты сразу попадёшь в игру.</div>
+    </form>
+    <form class="auth-form" id="formLogin" onsubmit="event.preventDefault();doLogin();">
+      <div class="auth-field"><label for="logLogin">Логин</label><input id="logLogin" type="text" maxlength="20" placeholder="Введите логин"></div>
+      <div class="auth-field"><label for="logPass">Пароль</label><input id="logPass" type="password" maxlength="50" placeholder="Введите пароль"></div>
+      <div class="auth-error" id="logError"></div>
+      <button type="submit" class="auth-submit">🔓 Войти</button>
+      <div class="auth-staff-hint">
+        <strong>🛡️ Служебный аккаунт админа</strong>
+        Логин: <code>admin</code> · Пароль: <code>Adm1n#Azs!2024$xK</code>
+        <div class="auth-quick"><button type="button" class="cyan" id="quickAdmin">Заполнить админа</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="app hidden" id="appRoot">
+  <header class="topbar">
+    <div class="brand"><span class="brand-dot"></span>СИМУЛЯТОР АЗС</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-l">Баланс</div><div class="stat-v" id="ui-money">0 ₽</div></div>
+      <div class="stat"><div class="stat-l">День</div><div class="stat-v" id="ui-day">1</div></div>
+      <div class="stat"><div class="stat-l">Репутация</div><div class="stat-v" id="ui-rep">50%</div></div>
+      <div class="stat"><div class="stat-l">Обслужено</div><div class="stat-v" id="ui-served">0</div></div>
+      <div class="stat"><div class="stat-l">Поток</div><div class="stat-v" id="ui-demand">×1.0</div></div>
+      <div class="stat"><div class="stat-l">👑 VIP</div><div class="stat-v gold" id="ui-vip">0</div></div>
+    </div>
+    <div class="user-chip" id="userChip">
+      <span id="userName">—</span>
+      <span class="role user" id="userRole">user</span>
+    </div>
+    <button type="button" class="menu-logout-btn" id="menuLogoutBtn" title="Выйти из аккаунта">🚪 Выход</button>
+    <div class="day-progress"><div class="day-progress-fill" id="ui-dayfill"></div></div>
+  </header>
+  <main class="main">
+    <section class="scene" id="sceneEl">
+      <canvas id="scene-canvas"></canvas>
+      <div class="event-overlay" id="eventOverlay"></div>
+      <div class="vip-flash" id="vipFlash"></div>
+      <div class="vip-banner" id="vipBanner">
+        <span class="vip-stars">✦</span>
+        <span class="vip-title">VIP-ГОСТЬ ПРИБЫЛ</span>
+        <span class="vip-stars">✦</span>
+        <span class="vip-sub">★ ПРИОРИТЕТНОЕ ОБСЛУЖИВАНИЕ ★</span>
+      </div>
+      <div class="vip-hud" id="vipHud">👑 VIP-ГОСТЬ<span class="vip-hud-num">×1</span></div>
+      <button class="event-circle" id="eventCircle">
+        <div class="event-circle-ring"></div>
+        <span class="event-circle-icon" id="eventIcon">⛽</span>
+      </button>
+      <div class="role-controls" id="roleControls">
+        <button class="role-btn admin-open" id="adminOpenBtn" title="Войти как администратор">🛡️</button>
+        <button class="role-btn founder-open" id="founderOpenBtn" title="Войти как основатель">👑</button>
+        <button class="hide-toggle" id="hideRoleBtn" title="Скрыть панели">◀</button>
+      </div>
+      <button class="unhide-tab" id="unhideRoleBtn" title="Показать панели">▶</button>
+    </section>
+    <aside class="panel">
+      <div class="log-wrap">
+        <div class="log-title">Журнал событий</div>
+        <div class="log" id="log"></div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="fuel">⛽ Топливо</button>
+        <button class="tab" data-tab="upg">🔧 Развитие</button>
+      </div>
+      <div class="tab-body active" id="tab-fuel">
+        <div id="fuelList"></div>
+        <div class="hint">💡 Оптимальная цена ≈ <b>+12%</b> к закупке. Повышайте репутацию — приедут <b class="gold">👑 VIP-клиенты</b>!</div>
+      </div>
+      <div class="tab-body" id="tab-upg">
+        <div class="ad">
+          <div class="ad-title">📣 Реклама на радио</div>
+          <div class="ad-desc">Поток клиентов +60% на один день.</div>
+          <button id="adBtn" class="btn-primary">Запустить · 9 000 ₽</button>
+        </div>
+        <div id="upgList"></div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div id="toasts"></div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h2 id="modalTitle">Отчёт за день</h2>
+    <div class="rep-rows" id="modalRows"></div>
+    <button id="modalBtn" class="btn-primary">Следующий день ▶</button>
+  </div>
+</div>
+
+<div class="event-modal gmodal" id="eventModal">
+  <div class="event-modal-box gmodal-box" id="eventBox">
+    <div class="event-modal-head">
+      <div class="event-modal-icon" id="eventModalIcon">⛽</div>
+      <div class="event-modal-titles">
+        <div class="event-modal-title" id="eventModalTitle">Событие</div>
+        <div class="event-modal-sub" id="eventModalSub">—</div>
+      </div>
+    </div>
+    <div class="event-modal-desc" id="eventModalDesc">—</div>
+    <div class="event-modal-timer">
+      <div class="event-timer-label">До конца события</div>
+      <div class="event-timer-bar"><div class="event-timer-fill" id="eventTimerFill"></div></div>
+      <div class="event-timer-text" id="eventTimerText">0с</div>
+    </div>
+    <div class="event-modal-effects" id="eventModalEffects"></div>
+    <button class="event-modal-close" id="eventModalClose">Понятно ✓</button>
+  </div>
+</div>
+
+<div class="gmodal" id="apanelModal">
+  <div class="apanel-box gmodal-box" id="apanelBox">
+    <div class="apanel-head">
+      <div class="apanel-icon" id="apanelIcon">🛡️</div>
+      <div class="apanel-titles">
+        <div class="apanel-title" id="apanelTitle">Админ-панель</div>
+        <div class="apanel-sub" id="apanelSub">Управление игрой</div>
+      </div>
+      <button class="apanel-close logout" id="apanelLogout">🚪</button>
+      <button class="apanel-close" id="apanelClose">✕</button>
+    </div>
+    <div class="apanel-tabs" id="apanelTabs"></div>
+    <div class="apanel-body active" id="apanelBody"></div>
+  </div>
+</div>
+
+<script>
+  'use strict';
+
+  const DB_KEY='azs_sim_db_v2';
+  const SESSION_KEY='azs_sim_session_v2';
+
+  // Учётные данные основателя заданы явно, без ошибочного XOR-преобразования.
+  const _x1='founder';
+  const _x2='F0und3r@Azs#Supreme!Zq7';
+
+  const DEFAULT_USERS=[
+    {id:1,login:'admin',pass:'Adm1n#Azs!2024$xK',role:'admin',money:500000,rep:75,vip:15,day:15,fuel:{ai95:8000,ai98:4000,dt:6000},price:{ai95:57.5,ai98:69.9,dt:63.2},upg:{pumps:3,shop:2,cafe:1,wash:1,staff:2,tanks:2},created:Date.now()-86400000*60,lastLogin:Date.now()-86400000*1},
+    {id:2,login:_x1,pass:_x2,role:'founder',money:9999999,rep:100,vip:999,day:99,fuel:{ai95:15000,ai98:7500,dt:12000},price:{ai95:60,ai98:72,dt:65},upg:{pumps:5,shop:5,cafe:5,wash:4,staff:3,tanks:4},created:Date.now()-86400000*90,lastLogin:Date.now()-86400000*0.5}
+  ];
+
+  const DB={
+    data:null,
+    load(){
+      try{
+        const raw=localStorage.getItem(DB_KEY);
+        if(raw){
+          this.data=JSON.parse(raw);
+          if(!this.data.users||!Array.isArray(this.data.users)) throw new Error('bad');
+          if(!this.data.nextId) this.data.nextId=Math.max(...this.data.users.map(u=>u.id))+1;
+          DEFAULT_USERS.forEach(def=>{
+            // Обновляем существующую запись основателя по роли, чтобы исправление
+            // работало и у пользователей, у которых база уже сохранена в localStorage.
+            let exists = def.role==='founder'
+              ? this.data.users.find(u=>u.role==='founder')
+              : this.data.users.find(u=>u.login===def.login);
+            if(!exists) this.data.users.push({...def,id:this.data.nextId++});
+            else{
+              exists.login=def.login;
+              exists.pass=def.pass;
+              exists.role=def.role;
+            }
+          });
+        } else {
+          this.data={
+            users:DEFAULT_USERS.map(u=>({...u,fuel:{...u.fuel},price:{...u.price},upg:{...u.upg}})),
+            nextId:DEFAULT_USERS.length+1,
+            stats:{logins:0,registrations:0,adminActions:0,eventsLaunched:0}
+          };
+        }
+      }catch(e){
+        this.data={
+          users:DEFAULT_USERS.map(u=>({...u,fuel:{...u.fuel},price:{...u.price},upg:{...u.upg}})),
+          nextId:DEFAULT_USERS.length+1,
+          stats:{logins:0,registrations:0,adminActions:0,eventsLaunched:0}
+        };
+      }
+      this.save();
+    },
+    save(){try{localStorage.setItem(DB_KEY,JSON.stringify(this.data));}catch(e){}},
+    findUser(login){return this.data.users.find(u=>u.login.toLowerCase()===login.toLowerCase());},
+    findById(id){return this.data.users.find(u=>u.id===id);},
+    create(login,pass){
+      if(this.findUser(login)) return {error:'Такой логин уже занят'};
+      const u={
+        id:this.data.nextId++,login,pass,role:'user',
+        money:150000,rep:50,vip:0,day:1,
+        fuel:{ai95:2000,ai98:800,dt:1200},
+        price:{ai95:58.2,ai98:70.6,dt:63.8},
+        upg:{pumps:1,shop:0,cafe:0,wash:0,staff:0,tanks:0},
+        created:Date.now(),lastLogin:Date.now()
+      };
+      this.data.users.push(u);
+      this.data.stats.registrations=(this.data.stats.registrations||0)+1;
+      this.save();
+      return {user:u};
+    },
+    auth(login,pass){
+      const u=this.findUser(login);
+      if(!u||u.pass!==pass) return null;
+      u.lastLogin=Date.now();
+      this.data.stats.logins=(this.data.stats.logins||0)+1;
+      this.save();
+      return u;
+    },
+    getSessionUserId(){try{const v=localStorage.getItem(SESSION_KEY);return v?parseInt(v):null;}catch(e){return null;}},
+    setSession(userId){try{localStorage.setItem(SESSION_KEY,String(userId));}catch(e){}},
+    clearSession(){try{localStorage.removeItem(SESSION_KEY);}catch(e){}},
+    session(){const id=this.getSessionUserId();if(!id) return null;return this.findById(id);},
+    logAdminAction(){this.data.stats.adminActions=(this.data.stats.adminActions||0)+1;this.save();},
+    logEventLaunch(){this.data.stats.eventsLaunched=(this.data.stats.eventsLaunched||0)+1;this.save();},
+    saveGameState(userId,state){
+      const u=this.findById(userId);
+      if(!u) return;
+      u.money=state.money;u.rep=state.reputation;u.vip=state.vipTotal||0;u.day=state.day||1;
+      u.fuel={...state.fuel};u.price={...state.price};u.upg={...state.upg};u.lastLogin=Date.now();
+      this.save();
+    },
+    loadGameState(userId){
+      const u=this.findById(userId);
+      if(!u) return null;
+      return {
+        money:u.money,reputation:u.rep,vipTotal:u.vip||0,day:u.day||1,
+        fuel:u.fuel?{...u.fuel}:{ai95:2000,ai98:800,dt:1200},
+        price:u.price?{...u.price}:{ai95:58.2,ai98:70.6,dt:63.8},
+        upg:{...u.upg}
+      };
+    }
+  };
+
+  const FUELS={
+    ai95:{name:'АИ-95',color:'#22c55e'},
+    ai98:{name:'АИ-98',color:'#3b82f6'},
+    dt:{name:'ДТ',color:'#f59e0b'}
+  };
+  const FKEYS=['ai95','ai98','dt'];
+  const BASE_CAP={ai95:10000,ai98:5000,dt:8000};
+  const BASE_MARKET={ai95:52,ai98:63,dt:57};
+  const DAY_LENGTH=75;
+
+  const UPGRADES=[
+    {id:'pumps',icon:'⛽',name:'Колонки',max:5,desc:l=>`Колонок: ${1+l}`,cost:l=>Math.round(12000*Math.pow(1.9,l))},
+    {id:'shop',icon:'🏪',name:'Магазин',max:5,desc:l=>`${22*l}% покупают товары`,cost:l=>Math.round(18000*Math.pow(1.7,l))},
+    {id:'cafe',icon:'☕',name:'Кафе',max:5,desc:l=>`${18*l}% берут кофе`,cost:l=>Math.round(25000*Math.pow(1.7,l))},
+    {id:'wash',icon:'🚿',name:'Автомойка',max:4,desc:l=>`${12*l}% моют машину`,cost:l=>Math.round(40000*Math.pow(1.8,l))},
+    {id:'staff',icon:'👷',name:'Персонал',max:3,desc:l=>`Скорость +${l*15}%`,cost:l=>Math.round(20000*Math.pow(2.0,l))},
+    {id:'tanks',icon:'🛢️',name:'Резервуары',max:4,desc:l=>`Объём +${l*50}%`,cost:l=>Math.round(15000*Math.pow(1.8,l))}
+  ];
+
+  const CAR_COLORS=[
+    ['#93c5fd','#3b82f6','#1e3a8a'],
+    ['#fca5a5','#dc2626','#7f1d1d'],
+    ['#fde68a','#f59e0b','#92400e'],
+    ['#e5e7eb','#94a3b8','#475569'],
+    ['#c4b5fd','#7c3aed','#4c1d95'],
+    ['#86efac','#16a34a','#14532d'],
+    ['#f9a8d4','#db2777','#831843'],
+    ['#fdba74','#ea580c','#7c2d12'],
+    ['#a5f3fc','#0891b2','#164e63'],
+    ['#fef3c7','#fbbf24','#78350f']
+  ];
+  const VIP_GOLD=['#fffbeb','#fef3c7','#fcd34d','#f59e0b','#b45309','#78350f'];
+
+  const EVENTS=[
+    {id:'fuel_crisis',icon:'⛽',weight:25,title:'Бензиновый кризис!',subtitle:'Все АЗС в городе остались без топлива',desc:'Из-за аварии на НПЗ соседние заправки закрылись. Клиенты едут к вам со всего города!',color:'#f59e0b',duration:15,effects:{demandMultiplier:2.6}},
+    {id:'festival',icon:'🎉',weight:20,title:'Городской фестиваль!',subtitle:'Тысячи гостей в городе',desc:'В городе большой праздник. Заезжие гости закупаются полными баками.',color:'#a78bfa',duration:15,effects:{demandMultiplier:1.5,vipMultiplier:4,litersMultiplier:1.4}},
+    {id:'price_war',icon:'⚔️',weight:18,title:'Ценовая война!',subtitle:'Конкуренты демпингуют',desc:'Соседние АЗС снизили цены. Клиенты чувствительны к цене.',color:'#ef4444',duration:15,effects:{demandMultiplier:0.85,sensitivity:1.9}},
+    {id:'rush_hour',icon:'🚗',weight:20,title:'Час пик!',subtitle:'Утренний поток в город',desc:'Все едут на работу, но берут меньше топлива.',color:'#38bdf8',duration:15,effects:{demandMultiplier:2.5,litersMultiplier:0.55}},
+    {id:'rain',icon:'🌧️',weight:15,title:'Ливень!',subtitle:'Ненастная погода',desc:'Мало кто выезжает, но VIP всё равно приезжают.',color:'#3b82f6',duration:15,effects:{demandMultiplier:0.5,vipMultiplier:1.4}},
+    {id:'gold_rush',icon:'👑',weight:4,title:'Золотая лихорадка!',subtitle:'VIP-конвой инкогнито',desc:'Колонна VIP-автомобилей. Каждый VIP платит в 2 раза больше.',color:'#fbbf24',duration:15,effects:{vipMultiplier:6,vipPayMultiplier:2}}
+  ];
+  const EVENTS_TOTAL_WEIGHT=EVENTS.reduce((s,e)=>s+e.weight,0);
+
+  let S,dayStats,spawnTimer,queue,allCars,pumpSlots,pumpXCanvas;
+  let paused=false,over=false,lastT=0,uiTimer=0;
+  let disp={money:0,served:0,rep:50,demand:1,vip:0};
+  let prevDisp={money:0,served:0,vip:0};
+  let particles=[],floaters=[],fireflies=[],puddles=[];
+
+  let activeEvent=null;
+  let activeEventTime=0;
+  let activeEventDuration=0;
+  let eventCheckTimer=25;
+  let eventModalOpen=false;
+  let eventCount=0;
+
+  let currentUser=null;
+  let currentPanel=null;
+  let panelTabs=[];
+  let autoSaveTimer=0;
+  let gameStarted=false;
+  let sceneTime=0;
+
+  const cv=document.getElementById('scene-canvas');
+  const ctx=cv.getContext('2d');
+  const bg=document.createElement('canvas');
+  const bgCtx=bg.getContext('2d');
+  let W=0,H=0,DPR=1;
+
+  const PUMP_CACHE=new Map();
+  const CAR_CACHE=new Map();
+
+  function hexToRgba(hex,a){
+    const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+  function lighten(hex,amt){
+    const r=Math.min(255,parseInt(hex.slice(1,3),16)+amt);
+    const g=Math.min(255,parseInt(hex.slice(3,5),16)+amt);
+    const b=Math.min(255,parseInt(hex.slice(5,7),16)+amt);
+    return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+  function darken(hex,amt){
+    const r=Math.max(0,parseInt(hex.slice(1,3),16)-amt);
+    const g=Math.max(0,parseInt(hex.slice(3,5),16)-amt);
+    const b=Math.max(0,parseInt(hex.slice(5,7),16)-amt);
+    return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+  function makeCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
+  function rr(c,x,y,w,h,r){
+    c.beginPath();
+    c.moveTo(x+r,y);c.lineTo(x+w-r,y);
+    c.quadraticCurveTo(x+w,y,x+w,y+r);
+    c.lineTo(x+w,y+h-r);
+    c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    c.lineTo(x+r,y+h);
+    c.quadraticCurveTo(x,y+h,x,y+h-r);
+    c.lineTo(x,y+r);
+    c.quadraticCurveTo(x,y,x+r,y);
+    c.closePath();
+  }
+
+  const nf=new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0});
+  const nf2=new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmt=n=>nf.format(Math.round(n));
+  const fmt2=n=>nf2.format(n);
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+  const pad=n=>String(n).padStart(2,'0');
+
+  function parseRuNumber(str){
+    if(typeof str==='number') return str;
+    if(!str) return NaN;
+    const cleaned=String(str).replace(/\s/g,'').replace(',','.').replace(/[^\d.\-]/g,'');
+    return parseFloat(cleaned);
+  }
+  function timeAgo(ts){
+    const s=(Date.now()-ts)/1000;
+    if(s<60) return 'только что';
+    if(s<3600) return `${Math.floor(s/60)} мин назад`;
+    if(s<86400) return `${Math.floor(s/3600)} ч назад`;
+    return `${Math.floor(s/86400)} дн назад`;
+  }
+  function capacity(k){return Math.round(BASE_CAP[k]*(1+S.upg.tanks*0.5))}
+  function pumpCount(){return 1+S.upg.pumps}
+
+  const logEl=document.getElementById('log');
+  const toastsEl=document.getElementById('toasts');
+  const vipBanner=document.getElementById('vipBanner');
+  const vipFlash=document.getElementById('vipFlash');
+  const vipHud=document.getElementById('vipHud');
+
+  function log(msg,cls){
+    const el=document.createElement('div');
+    el.className='log-line '+(cls||'');
+    const dayCls=cls==='event'?'event-day':cls==='vip'?'vip-day':cls==='admin'?'admin-day':'';
+    el.innerHTML=`<span class="log-day ${dayCls}">Д${S?S.day:'-'}</span>${msg}`;
+    logEl.prepend(el);
+    while(logEl.children.length>40) logEl.lastChild.remove();
+  }
+  function toast(msg,type){
+    const el=document.createElement('div');
+    el.className='toast '+(type||'');
+    el.textContent=msg;
+    toastsEl.appendChild(el);
+    setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),300)},2900);
+    while(toastsEl.children.length>4) toastsEl.firstChild.remove();
+  }
+  function showVIPBanner(){
+    vipBanner.classList.remove('show');
+    vipFlash.classList.remove('show');
+    void vipBanner.offsetWidth;
+    void vipFlash.offsetWidth;
+    vipBanner.classList.add('show');
+    vipFlash.classList.add('show');
+  }
+  function updateVipHud(){
+    const vipsInScene=allCars.filter(c=>c.isVIP).length;
+    if(vipsInScene>0){
+      vipHud.classList.add('on');
+      vipHud.innerHTML=`👑 VIP-ГОСТЬ<span class="vip-hud-num">×${vipsInScene}</span>`;
+    } else vipHud.classList.remove('on');
+  }
+  function updateUserChip(){
+    const chip=document.getElementById('userChip');
+    if(!currentUser){chip.style.display='none';return;}
+    chip.style.display='flex';
+    document.getElementById('userName').textContent=currentUser.login;
+    const roleEl=document.getElementById('userRole');
+    roleEl.textContent=currentUser.role;
+    roleEl.className='role '+currentUser.role;
+  }
+
+  const authScreen=document.getElementById('authScreen');
+  const appRoot=document.getElementById('appRoot');
+
+  document.getElementById('tabRegister').addEventListener('click',()=>{
+    document.getElementById('tabRegister').classList.add('active');
+    document.getElementById('tabLogin').classList.remove('active');
+    document.getElementById('formRegister').classList.add('active');
+    document.getElementById('formLogin').classList.remove('active');
+  });
+  document.getElementById('tabLogin').addEventListener('click',()=>{
+    document.getElementById('tabLogin').classList.add('active');
+    document.getElementById('tabRegister').classList.remove('active');
+    document.getElementById('formLogin').classList.add('active');
+    document.getElementById('formRegister').classList.remove('active');
+  });
+  document.getElementById('quickAdmin').addEventListener('click',()=>{
+    document.getElementById('logLogin').value='admin';
+    document.getElementById('logPass').value='Adm1n#Azs!2024$xK';
+  });
+  function validateLogin(login){
+    if(!login) return 'Введите логин';
+    if(login.length<3) return 'Логин минимум 3 символа';
+    if(login.length>20) return 'Логин максимум 20 символов';
+    if(!/^[A-Za-z0-9_\-]+$/.test(login)) return 'Только буквы, цифры, _ и -';
+    return null;
+  }
+  function doRegister(){
+    const login=document.getElementById('regLogin').value.trim();
+    const pass=document.getElementById('regPass').value;
+    const pass2=document.getElementById('regPass2').value;
+    const errEl=document.getElementById('regError');
+    errEl.textContent='';
+    const loginErr=validateLogin(login);
+    if(loginErr){errEl.textContent=loginErr;return;}
+    if(pass.length<4){errEl.textContent='Пароль минимум 4 символа';return;}
+    if(pass!==pass2){errEl.textContent='Пароли не совпадают';return;}
+    if(DB.findUser(login)){errEl.textContent='Такой логин уже занят';return;}
+    const res=DB.create(login,pass);
+    if(res.error){errEl.textContent=res.error;return;}
+    DB.setSession(res.user.id);
+    currentUser=res.user;
+    startGame();
+  }
+  function doLogin(){
+    const login=document.getElementById('logLogin').value.trim();
+    const pass=document.getElementById('logPass').value;
+    const errEl=document.getElementById('logError');
+    errEl.textContent='';
+    if(!login){errEl.textContent='Введите логин';return;}
+    if(!pass){errEl.textContent='Введите пароль';return;}
+    const u=DB.auth(login,pass);
+    if(!u){errEl.textContent='Неверный логин или пароль';return;}
+    DB.setSession(u.id);
+    currentUser=u;
+    startGame();
+  }
+  function startGame(){
+    authScreen.classList.add('hidden');
+    appRoot.classList.remove('hidden');
+    gameStarted=true;
+    updateUserChip();
+    if(!S) initGame();
+    else {
+      const saved=DB.loadGameState(currentUser.id);
+      if(saved) applySavedState(saved);
+    }
+    log(`👋 Добро пожаловать, <b>${currentUser.login}</b>!`);
+    log('💬 Хочешь купить такую же игру? Напиши мне в Telegram: <b>@c0der_pyth0n</b>!');
+    toast(`👋 Привет, ${currentUser.login}!`,'good');
+    toast('💬 Хочешь такую же игру? Telegram: @c0der_pyth0n','good');
+    setTimeout(()=>{resizeCanvas();}, 30);
+    setTimeout(()=>{resizeCanvas();}, 200);
+  }
+  function applySavedState(saved){
+    S.money=saved.money;S.reputation=saved.reputation;S.upg={...saved.upg};
+    S.vipTotal=saved.vipTotal||0;S.day=saved.day||1;S.dayTime=0;
+    S.fuel={...saved.fuel};S.price={...saved.price};
+    S.market=Object.assign({},BASE_MARKET);
+    layoutPumps();buildFuelPanel();updateAllUI();
+  }
+
+  const eventCircle=document.getElementById('eventCircle');
+  const eventIcon=document.getElementById('eventIcon');
+  const eventOverlay=document.getElementById('eventOverlay');
+  const eventModal=document.getElementById('eventModal');
+  const eventBox=document.getElementById('eventBox');
+
+  function pickRandomEvent(){
+    let roll=Math.random()*EVENTS_TOTAL_WEIGHT;
+    for(let i=0;i<EVENTS.length;i++){
+      roll-=EVENTS[i].weight;
+      if(roll<=0) return EVENTS[i];
+    }
+    return EVENTS[0];
+  }
+  function getEventMod(key,def){
+    if(!activeEvent||activeEvent.effects[key]===undefined) return def;
+    return activeEvent.effects[key];
+  }
+
+  function startEvent(eventOverride){
+    const evt=eventOverride||pickRandomEvent();
+    if(!evt) return;
+    const dur=Number(evt.duration);
+    activeEvent=evt;
+    activeEventDuration=(Number.isFinite(dur)&&dur>0)?dur:15;
+    activeEventTime=0;
+    eventCheckTimer=40+Math.random()*45;
+    eventCount++;
+    eventCircle.style.setProperty('--event-color',evt.color);
+    eventCircle.style.setProperty('--event-glow',hexToRgba(evt.color,.55));
+    eventOverlay.style.setProperty('--event-tint',hexToRgba(evt.color,.18));
+    eventIcon.textContent=evt.icon;
+    eventCircle.style.setProperty('--progress',100);
+    eventCircle.classList.add('on');
+    eventOverlay.classList.add('on');
+    log(`${evt.icon} ${evt.title}`,'event');
+    toast(`${evt.icon} ${evt.title}`,'event');
+  }
+
+  function endEvent(){
+    if(!activeEvent) return;
+    const was=activeEvent;
+    activeEvent=null;
+    activeEventTime=0;
+    activeEventDuration=0;
+    eventCheckTimer=40+Math.random()*45;
+    eventCircle.classList.remove('on');
+    eventOverlay.classList.remove('on');
+    eventCircle.style.setProperty('--progress',0);
+    if(eventModalOpen) closeEventModal();
+    log(`✅ Событие «${was.title}» завершено`,'good');
+  }
+
+  function updateEvents(dt){
+    if(activeEvent){
+      activeEventTime+=dt;
+      const dur=activeEventDuration||15;
+      const remaining=Math.max(0,dur-activeEventTime);
+      const progress=clamp(remaining/dur*100,0,100);
+      eventCircle.style.setProperty('--progress',progress.toFixed(1));
+      if(eventModalOpen){
+        document.getElementById('eventTimerFill').style.width=progress+'%';
+        document.getElementById('eventTimerText').textContent=Math.ceil(remaining)+'с';
+      }
+      if(activeEventTime>=dur) endEvent();
+    } else {
+      eventCheckTimer-=dt;
+      if(eventCheckTimer<=0){
+        eventCheckTimer=40+Math.random()*45;
+        if(Math.random()<0.65) startEvent();
+      }
+    }
+  }
+  function openEventModal(){
+    if(!activeEvent||eventModalOpen) return;
+    const evt=activeEvent;
+    document.getElementById('eventModalIcon').textContent=evt.icon;
+    document.getElementById('eventModalIcon').style.background=`linear-gradient(135deg,${hexToRgba(evt.color,.35)},${hexToRgba(evt.color,.15)})`;
+    document.getElementById('eventModalTitle').textContent=evt.title;
+    document.getElementById('eventModalTitle').style.color=evt.color;
+    document.getElementById('eventModalSub').textContent=evt.subtitle;
+    document.getElementById('eventModalDesc').textContent=evt.desc;
+    document.getElementById('eventModalDesc').style.borderLeftColor=evt.color;
+    eventBox.style.setProperty('--event-color',evt.color);
+    eventBox.style.setProperty('--event-color-l',lighten(evt.color,40));
+    const remaining=Math.max(0,evt.duration-activeEventTime);
+    document.getElementById('eventTimerFill').style.width=(remaining/evt.duration*100)+'%';
+    document.getElementById('eventTimerText').textContent=Math.ceil(remaining)+'с';
+    renderEventEffects(evt);
+    eventBox.style.transition='none';
+    eventBox.style.transform='scale(1)';
+    void eventBox.offsetWidth;
+    const cr=eventCircle.getBoundingClientRect();
+    const br=eventBox.getBoundingClientRect();
+    const ox=((cr.left+cr.width/2)-br.left)/br.width*100;
+    const oy=((cr.top+cr.height/2)-br.top)/br.height*100;
+    eventBox.style.transformOrigin=`${ox}% ${oy}%`;
+    eventBox.style.transform='';
+    eventBox.style.transition='';
+    void eventBox.offsetWidth;
+    eventModal.classList.add('show');
+    eventModalOpen=true;
+  }
+  function closeEventModal(){eventModal.classList.remove('show');eventModalOpen=false;}
+  function renderEventEffects(evt){
+    const wrap=document.getElementById('eventModalEffects');
+    const e=evt.effects,items=[];
+    if(e.demandMultiplier&&e.demandMultiplier!==1){
+      const pct=Math.round((e.demandMultiplier-1)*100);
+      items.push({icon:pct>0?'📈':'📉',text:`Поток клиентов ${pct>0?'+':''}${pct}%`,good:pct>0});
+    }
+    if(e.vipMultiplier&&e.vipMultiplier>1) items.push({icon:'👑',text:`VIP-клиентов ×${e.vipMultiplier}`,good:true});
+    if(e.vipPayMultiplier&&e.vipPayMultiplier>1) items.push({icon:'💰',text:`VIP платят ×${e.vipPayMultiplier}`,good:true});
+    if(e.litersMultiplier&&e.litersMultiplier!==1){
+      const pct=Math.round((e.litersMultiplier-1)*100);
+      items.push({icon:'⛽',text:`Средний чек ${pct>0?'+':''}${pct}%`,good:pct>0});
+    }
+    if(e.sensitivity&&e.sensitivity>1) items.push({icon:'⚠️',text:'Клиенты чувствительнее к цене',good:false});
+    wrap.innerHTML='';
+    items.forEach(it=>{
+      const el=document.createElement('div');
+      el.className='event-effect '+(it.good?'good':'bad');
+      el.innerHTML=`<span class="event-effect-icon">${it.icon}</span><span class="event-effect-text">${it.text}</span>`;
+      wrap.appendChild(el);
+    });
+  }
+  eventCircle.addEventListener('click',openEventModal);
+  document.getElementById('eventModalClose').addEventListener('click',closeEventModal);
+  eventModal.addEventListener('click',e=>{if(e.target===eventModal)closeEventModal();});
+
+  function renderPumpToCanvas(){
+    const w=56,h=130,scale=2;
+    const c=makeCanvas(w*scale,h*scale);
+    const g=c.getContext('2d');
+    g.scale(scale,scale);
+    const cx=w/2;
+
+    g.fillStyle='rgba(0,0,0,.45)';
+    rr(g,cx-22,h-8,44,6,3);g.fill();
+    const padGrad=g.createLinearGradient(0,h-16,0,h-8);
+    padGrad.addColorStop(0,'#48536b');padGrad.addColorStop(0.5,'#394459');padGrad.addColorStop(1,'#1c2330');
+    g.fillStyle=padGrad;rr(g,cx-21,h-16,42,10,2);g.fill();
+    g.fillStyle='rgba(255,255,255,.08)';g.fillRect(cx-20,h-16,40,1);
+
+    const tg=g.createLinearGradient(0,8,0,18);
+    tg.addColorStop(0,'#5d6a80');tg.addColorStop(0.5,'#3f4a5e');tg.addColorStop(1,'#1e2533');
+    g.fillStyle=tg;rr(g,cx-19,8,38,10,3);g.fill();
+    g.fillStyle='rgba(255,255,255,.22)';g.fillRect(cx-18,9,36,1.2);
+
+    const bodyGrad=g.createLinearGradient(cx-18,0,cx+18,0);
+    bodyGrad.addColorStop(0,'#fbfdff');bodyGrad.addColorStop(0.05,'#f4f8fc');
+    bodyGrad.addColorStop(0.35,'#e3ebf5');bodyGrad.addColorStop(0.62,'#c5d0e0');
+    bodyGrad.addColorStop(0.85,'#8c99b0');bodyGrad.addColorStop(0.96,'#5b687f');bodyGrad.addColorStop(1,'#3d4858');
+    g.fillStyle=bodyGrad;rr(g,cx-18,18,36,98,4);g.fill();
+    g.strokeStyle='rgba(255,255,255,.85)';g.lineWidth=0.8;
+    g.beginPath();g.moveTo(cx-17,21);g.lineTo(cx-17,113);g.stroke();
+
+    const sx=cx-13,sy=24,sw=26,sh=20;
+    g.fillStyle='#04070d';rr(g,sx,sy,sw,sh,2);g.fill();
+    const screenGrad=g.createLinearGradient(sx,sy,sx,sy+sh);
+    screenGrad.addColorStop(0,'#0c1a26');screenGrad.addColorStop(1,'#050c14');
+    g.fillStyle=screenGrad;rr(g,sx+1,sy+1,sw-2,sh-2,1.5);g.fill();
+    g.fillStyle='rgba(90,255,150,.95)';g.fillRect(sx+2.5,sy+3,14,1.4);
+    g.fillStyle='rgba(90,255,150,.7)';g.fillRect(sx+2.5,sy+6,10,1);
+    g.fillStyle='rgba(255,210,70,.85)';g.fillRect(sx+15,sy+13,8,2.5);
+
+    const brandY=sy+sh+3.5;
+    g.fillStyle='#0a1220';rr(g,cx-14,brandY,28,7,1.5);g.fill();
+    g.fillStyle='#e2e8f0';g.font='900 4.6px Inter,system-ui,sans-serif';
+    g.textAlign='center';g.textBaseline='middle';
+    g.fillText('FUEL',cx,brandY+3.8);
+
+    const py=brandY+10;
+    g.fillStyle='#1e293b';rr(g,cx-14,py,28,11,2);g.fill();
+    g.fillStyle='#0f172a';rr(g,cx-12,py+1.5,24,7,1.2);g.fill();
+    g.fillStyle='#22c55e';g.fillRect(cx-11,py+2.5,13,1.2);
+
+    const by=py+15;
+    [['#22c55e','#15803d'],['#3b82f6','#1e40af'],['#f59e0b','#b45309']].forEach((st,i)=>{
+      const y=by+i*5;
+      const sg=g.createLinearGradient(0,y,0,y+4);
+      sg.addColorStop(0,st[0]);sg.addColorStop(1,st[1]);
+      g.fillStyle=sg;g.fillRect(cx-16,y,32,4);
+      g.fillStyle='rgba(255,255,255,.35)';g.fillRect(cx-16,y,32,0.8);
+    });
+
+    const ny=by+18;
+    g.fillStyle='#0f172a';rr(g,cx+16,ny,7,22,2);g.fill();
+    g.fillStyle='#4b5563';rr(g,cx+16.8,ny+3,5.4,14,1.5);g.fill();
+
+    g.strokeStyle='#0d141f';g.lineWidth=3.2;
+    g.beginPath();
+    g.moveTo(cx+16.5,ny+22);
+    g.quadraticCurveTo(cx+24,ny+30,cx+12,ny+38);
+    g.quadraticCurveTo(cx+2,ny+44,cx-10,ny+36);
+    g.stroke();
+
+    g.fillStyle='#1a2230';g.fillRect(cx-18,114,36,2.4);
+    g.fillStyle='rgba(255,255,255,.1)';g.fillRect(cx-18,114,36,0.7);
+    return c;
+  }
+  function getPumpCanvas(){
+    if(PUMP_CACHE.has('p')) return PUMP_CACHE.get('p');
+    const c=renderPumpToCanvas();
+    PUMP_CACHE.set('p',c);
+    return c;
+  }
+
+  function drawWheel(g,cx,cy,r,rotation,isVIP){
+    const tireGrad=g.createRadialGradient(cx-r*0.3,cy-r*0.3,r*0.1,cx,cy,r);
+    tireGrad.addColorStop(0,'#2a2a32');
+    tireGrad.addColorStop(0.65,'#14141a');
+    tireGrad.addColorStop(1,'#050508');
+    g.fillStyle=tireGrad;
+    g.beginPath();g.arc(cx,cy,r,0,7);g.fill();
+
+    g.strokeStyle='rgba(0,0,0,.9)';
+    g.lineWidth=r*0.09;
+    for(let i=0;i<16;i++){
+      const a=(i/16)*Math.PI*2;
+      g.beginPath();
+      g.moveTo(cx+Math.cos(a)*r*0.87,cy+Math.sin(a)*r*0.87);
+      g.lineTo(cx+Math.cos(a)*r*0.97,cy+Math.sin(a)*r*0.97);
+      g.stroke();
+    }
+
+    g.strokeStyle='rgba(70,78,92,.7)';
+    g.lineWidth=r*0.1;
+    g.beginPath();
+    g.arc(cx,cy,r*0.78,Math.PI*1.15,Math.PI*1.85);
+    g.stroke();
+
+    g.save();
+    g.translate(cx,cy);
+    g.rotate(rotation);
+
+    const rimR=r*0.7;
+
+    const rimGrad=g.createRadialGradient(-rimR*0.3,-rimR*0.3,0,0,0,rimR);
+    if(isVIP){
+      rimGrad.addColorStop(0,'#fef9d7');
+      rimGrad.addColorStop(0.5,'#fbbf24');
+      rimGrad.addColorStop(0.85,'#b45309');
+      rimGrad.addColorStop(1,'#78350f');
+    } else {
+      rimGrad.addColorStop(0,'#f0f4f9');
+      rimGrad.addColorStop(0.45,'#c8d2e0');
+      rimGrad.addColorStop(0.8,'#8a97aa');
+      rimGrad.addColorStop(1,'#4e586a');
+    }
+    g.fillStyle=rimGrad;
+    g.beginPath();g.arc(0,0,rimR,0,7);g.fill();
+
+    const innerGrad=g.createRadialGradient(-rimR*0.2,-rimR*0.2,0,0,0,rimR*0.82);
+    if(isVIP){
+      innerGrad.addColorStop(0,'#b45309');innerGrad.addColorStop(1,'#451a03');
+    } else {
+      innerGrad.addColorStop(0,'#5a6678');innerGrad.addColorStop(1,'#2a3342');
+    }
+    g.fillStyle=innerGrad;
+    g.beginPath();g.arc(0,0,rimR*0.82,0,7);g.fill();
+
+    g.fillStyle='rgba(50,55,68,.9)';
+    g.beginPath();g.arc(0,0,rimR*0.7,0,7);g.fill();
+    g.fillStyle='rgba(130,140,155,.75)';
+    g.beginPath();g.arc(0,0,rimR*0.65,0,7);g.fill();
+    g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=0.5;
+    for(let i=0;i<10;i++){
+      const a=(i/10)*Math.PI*2;
+      g.beginPath();
+      g.moveTo(Math.cos(a)*rimR*0.32,Math.sin(a)*rimR*0.32);
+      g.lineTo(Math.cos(a)*rimR*0.62,Math.sin(a)*rimR*0.62);
+      g.stroke();
+    }
+
+    g.fillStyle=isVIP?'rgba(180,50,50,.9)':'rgba(220,60,60,.85)';
+    g.beginPath();
+    g.arc(rimR*0.42,-rimR*0.12,rimR*0.19,0,7);
+    g.fill();
+
+    const spokeColor=isVIP?'#b45309':'#6d7a8e';
+    const spokeHighlight=isVIP?'#fef3c7':'#d8e2ef';
+    for(let i=0;i<5;i++){
+      const a=(i/5)*Math.PI*2-Math.PI*0.5;
+      const x1=Math.cos(a)*rimR*0.18,y1=Math.sin(a)*rimR*0.18;
+      const x2=Math.cos(a)*rimR*0.75,y2=Math.sin(a)*rimR*0.75;
+      g.strokeStyle=spokeColor;
+      g.lineWidth=rimR*0.28;
+      g.lineCap='round';
+      g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();
+      g.strokeStyle=spokeHighlight;
+      g.lineWidth=rimR*0.08;
+      g.beginPath();
+      g.moveTo(x1*1.3,y1*1.3-0.8);
+      g.lineTo(x2*0.9,y2*0.9-0.8);
+      g.stroke();
+    }
+
+    const capGrad=g.createRadialGradient(-rimR*0.08,-rimR*0.08,0,0,0,rimR*0.22);
+    if(isVIP){
+      capGrad.addColorStop(0,'#fef3c7');capGrad.addColorStop(0.6,'#f59e0b');capGrad.addColorStop(1,'#78350f');
+    } else {
+      capGrad.addColorStop(0,'#f5f9fc');capGrad.addColorStop(0.6,'#b8c5d6');capGrad.addColorStop(1,'#3d4859');
+    }
+    g.fillStyle=capGrad;
+    g.beginPath();g.arc(0,0,rimR*0.22,0,7);g.fill();
+    g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=0.5;
+    g.beginPath();g.arc(0,0,rimR*0.22,0,7);g.stroke();
+    g.fillStyle='rgba(255,255,255,.75)';
+    g.beginPath();g.arc(-rimR*0.06,-rimR*0.06,rimR*0.07,0,7);g.fill();
+
+    g.restore();
+  }
+
+  function drawRegularBody(g,w,h,c1c2c3){
+    const [c1,c2,c3]=c1c2c3;
+
+    const bodyGrad=g.createLinearGradient(0,12,0,46);
+    bodyGrad.addColorStop(0,lighten(c1,55));
+    bodyGrad.addColorStop(0.08,lighten(c1,32));
+    bodyGrad.addColorStop(0.22,c1);
+    bodyGrad.addColorStop(0.5,c1);
+    bodyGrad.addColorStop(0.72,c2);
+    bodyGrad.addColorStop(0.94,c3);
+    bodyGrad.addColorStop(1,darken(c3,18));
+
+    g.fillStyle=bodyGrad;
+    g.beginPath();
+    g.moveTo(8,46);
+    g.lineTo(8,38);
+    g.quadraticCurveTo(8,33,13,31);
+    g.lineTo(22,29);
+    g.quadraticCurveTo(32,27,40,20);
+    g.quadraticCurveTo(46,14,58,12.5);
+    g.lineTo(76,12.5);
+    g.quadraticCurveTo(86,13,92,18);
+    g.lineTo(104,27);
+    g.lineTo(118,27);
+    g.quadraticCurveTo(122,27,123,31);
+    g.quadraticCurveTo(124,36,124,41);
+    g.lineTo(124,46);
+    g.lineTo(110,46);
+    g.quadraticCurveTo(110,32,96,32);
+    g.quadraticCurveTo(82,32,82,46);
+    g.lineTo(40,46);
+    g.quadraticCurveTo(40,32,26,32);
+    g.quadraticCurveTo(12,32,12,46);
+    g.closePath();
+    g.fill();
+
+    g.strokeStyle='rgba(0,0,0,.4)';
+    g.lineWidth=0.9;
+    g.stroke();
+
+    g.strokeStyle='rgba(255,255,255,.85)';
+    g.lineWidth=1.5;
+    g.beginPath();
+    g.moveTo(44,15);
+    g.quadraticCurveTo(52,13,60,12.7);
+    g.lineTo(76,12.7);
+    g.quadraticCurveTo(82,13,86,15);
+    g.stroke();
+
+    g.strokeStyle='rgba(0,0,0,.18)';
+    g.lineWidth=1;
+    g.beginPath();
+    g.moveTo(14,37);
+    g.lineTo(120,37);
+    g.stroke();
+
+    g.fillStyle='rgba(255,255,255,.32)';
+    g.beginPath();
+    g.moveTo(14,22);
+    g.quadraticCurveTo(60,24,116,22);
+    g.lineTo(116,23.5);
+    g.quadraticCurveTo(60,25.5,14,23.5);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='rgba(255,255,255,.18)';
+    g.beginPath();
+    g.moveTo(18,31);
+    g.quadraticCurveTo(60,33,110,31);
+    g.lineTo(110,32);
+    g.quadraticCurveTo(60,34,18,32);
+    g.closePath();
+    g.fill();
+
+    const wg=g.createLinearGradient(0,17,0,27);
+    wg.addColorStop(0,'rgba(170,215,255,.94)');
+    wg.addColorStop(0.28,'rgba(70,105,160,.96)');
+    wg.addColorStop(0.65,'rgba(20,35,60,.98)');
+    wg.addColorStop(1,'rgba(8,15,30,.99)');
+
+    g.fillStyle=wg;
+    g.beginPath();
+    g.moveTo(32,26);
+    g.lineTo(33,22);
+    g.quadraticCurveTo(35,19,38,18.5);
+    g.lineTo(42,18);
+    g.lineTo(42,26);
+    g.closePath();
+    g.fill();
+
+    g.beginPath();
+    g.moveTo(44,18);
+    g.lineTo(60,17.5);
+    g.lineTo(60,26);
+    g.lineTo(44,26);
+    g.closePath();
+    g.fill();
+
+    g.beginPath();
+    g.moveTo(62,17.5);
+    g.lineTo(80,18);
+    g.quadraticCurveTo(84,20,85,23);
+    g.lineTo(85,26);
+    g.lineTo(62,26);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='rgba(220,240,255,.42)';
+    g.beginPath();
+    g.moveTo(35,22);
+    g.lineTo(38,19.5);
+    g.lineTo(40,19.5);
+    g.lineTo(36,25);
+    g.lineTo(34,25);
+    g.closePath();
+    g.fill();
+    g.fillStyle='rgba(220,240,255,.38)';
+    g.fillRect(46,18.5,3,7);
+    g.fillRect(64,18.5,3,7);
+
+    g.strokeStyle='rgba(255,255,255,.9)';
+    g.lineWidth=1.5;
+    g.beginPath();
+    g.moveTo(32,26);
+    g.lineTo(33,21.5);
+    g.quadraticCurveTo(35,18.7,38,18.2);
+    g.lineTo(80,18);
+    g.quadraticCurveTo(84,20,85,23);
+    g.stroke();
+
+    g.beginPath();
+    g.moveTo(31,26.5);
+    g.lineTo(86,26.5);
+    g.stroke();
+
+    g.fillStyle='rgba(10,15,25,.95)';
+    g.fillRect(61,17.5,1.8,9);
+
+    g.strokeStyle='rgba(0,0,0,.42)';
+    g.lineWidth=0.8;
+    g.beginPath();
+    g.moveTo(43,26.5);
+    g.lineTo(44,42);
+    g.stroke();
+    g.beginPath();
+    g.moveTo(87,24);
+    g.quadraticCurveTo(89,33,89,42);
+    g.stroke();
+
+    drawHandle(g,47,33,c2);
+    drawHandle(g,68,33,c2);
+
+    g.fillStyle=c2;
+    g.beginPath();
+    g.moveTo(89,21);
+    g.lineTo(96,20);
+    g.lineTo(98,22.5);
+    g.lineTo(90,23.5);
+    g.closePath();
+    g.fill();
+    g.strokeStyle='rgba(0,0,0,.5)';
+    g.lineWidth=0.6;
+    g.stroke();
+    g.fillStyle='rgba(200,225,255,.55)';
+    g.beginPath();
+    g.moveTo(90,21.5);
+    g.lineTo(95.5,20.7);
+    g.lineTo(96.5,22);
+    g.lineTo(90.5,22.8);
+    g.closePath();
+    g.fill();
+
+    drawHeadlight(g);
+    drawTaillight(g);
+
+    g.fillStyle='rgba(0,0,0,.4)';
+    g.beginPath();
+    g.moveTo(115,34);
+    g.lineTo(124,34);
+    g.lineTo(124,40);
+    g.lineTo(115,40);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='rgba(200,225,245,.55)';
+    rr(g,116,36,5,2.2,0.7);
+    g.fill();
+
+    g.fillStyle='rgba(15,22,35,.85)';
+    g.beginPath();
+    g.moveTo(116,29);
+    g.lineTo(123,29);
+    g.lineTo(123,33);
+    g.lineTo(116,33);
+    g.closePath();
+    g.fill();
+    g.strokeStyle='rgba(200,215,235,.75)';
+    g.lineWidth=0.6;
+    for(let i=0;i<4;i++){
+      g.beginPath();
+      g.moveTo(116,29.8+i*0.9);
+      g.lineTo(123,29.8+i*0.9);
+      g.stroke();
+    }
+
+    g.fillStyle='rgba(0,0,0,.4)';
+    g.beginPath();
+    g.moveTo(8,38);
+    g.lineTo(13,38);
+    g.lineTo(13,44);
+    g.lineTo(8,44);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='#f8fafc';
+    rr(g,12,34,13,5.5,0.8);g.fill();
+    g.strokeStyle='rgba(0,0,0,.45)';
+    g.lineWidth=0.5;
+    rr(g,12,34,13,5.5,0.8);g.stroke();
+    g.fillStyle='#0f172a';
+    g.font='900 3.6px Inter, sans-serif';
+    g.textAlign='center';
+    g.textBaseline='middle';
+    g.fillText('А123ВС',18.5,36.8);
+
+    g.strokeStyle='rgba(20,25,35,.9)';
+    g.lineWidth=0.9;
+    g.beginPath();
+    g.moveTo(40,15);
+    g.lineTo(37,6);
+    g.stroke();
+    g.fillStyle='rgba(200,215,230,.95)';
+    g.beginPath();g.arc(37,6,1.1,0,7);g.fill();
+
+    g.fillStyle='rgba(35,40,50,.95)';
+    rr(g,8,44,6,2.6,0.6);g.fill();
+    g.fillStyle='rgba(10,15,25,.98)';
+    rr(g,8.5,44.7,5,1.4,0.4);g.fill();
+
+    g.fillStyle='rgba(0,0,0,.55)';
+    g.beginPath();
+    g.moveTo(41,46);
+    g.lineTo(81,46);
+    g.lineTo(81,44.5);
+    g.lineTo(41,44.5);
+    g.closePath();
+    g.fill();
+  }
+
+  function drawHandle(g,x,y,bodyColor){
+    g.fillStyle='rgba(0,0,0,.35)';
+    rr(g,x,y+1.5,9,3,0.7);g.fill();
+    const hg=g.createLinearGradient(0,y,0,y+3);
+    hg.addColorStop(0,'#f5f9ff');
+    hg.addColorStop(0.5,'#c8d4e3');
+    hg.addColorStop(1,'#6b7889');
+    g.fillStyle=hg;
+    rr(g,x,y,9,3,0.7);g.fill();
+    g.strokeStyle='rgba(0,0,0,.5)';
+    g.lineWidth=0.5;
+    rr(g,x,y,9,3,0.7);g.stroke();
+    g.fillStyle='rgba(255,255,255,.7)';
+    g.fillRect(x+1,y+0.5,7,0.7);
+  }
+
+  function drawHeadlight(g){
+    const hg=g.createLinearGradient(112,23,124,33);
+    hg.addColorStop(0,'rgba(240,245,255,.95)');
+    hg.addColorStop(0.5,'rgba(220,235,250,.85)');
+    hg.addColorStop(1,'rgba(180,200,220,.7)');
+    g.fillStyle=hg;
+    g.beginPath();
+    g.moveTo(112,23);
+    g.quadraticCurveTo(120,23.5,123,26);
+    g.quadraticCurveTo(124,29,123,32);
+    g.lineTo(112,32);
+    g.quadraticCurveTo(111,28,112,23);
+    g.closePath();
+    g.fill();
+    g.strokeStyle='rgba(0,0,0,.55)';
+    g.lineWidth=0.8;
+    g.stroke();
+
+    const lens1=g.createRadialGradient(117,27,0,117,27,3.5);
+    lens1.addColorStop(0,'rgba(255,255,255,.98)');
+    lens1.addColorStop(0.4,'rgba(255,240,180,.85)');
+    lens1.addColorStop(1,'rgba(240,220,150,.3)');
+    g.fillStyle=lens1;
+    g.beginPath();g.arc(117,27,3,0,7);g.fill();
+
+    const lens2=g.createRadialGradient(121,30,0,121,30,2.5);
+    lens2.addColorStop(0,'rgba(255,255,255,.95)');
+    lens2.addColorStop(1,'rgba(240,220,150,.3)');
+    g.fillStyle=lens2;
+    g.beginPath();g.arc(121,30,2,0,7);g.fill();
+
+    g.fillStyle='rgba(255,255,255,.95)';
+    g.beginPath();
+    g.moveTo(113,24.2);
+    g.quadraticCurveTo(118,24,122,25.5);
+    g.lineTo(122,26.2);
+    g.quadraticCurveTo(118,24.8,113,25);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='rgba(255,250,220,.35)';
+    g.beginPath();g.arc(117,27,5.5,0,7);g.fill();
+  }
+
+  function drawTaillight(g){
+    const tg=g.createLinearGradient(9,22,22,32);
+    tg.addColorStop(0,'rgba(120,20,20,.95)');
+    tg.addColorStop(0.5,'rgba(200,35,35,.95)');
+    tg.addColorStop(1,'rgba(240,100,100,.9)');
+    g.fillStyle=tg;
+    g.beginPath();
+    g.moveTo(9,23);
+    g.quadraticCurveTo(15,22,21,24);
+    g.quadraticCurveTo(23,26,23,29);
+    g.quadraticCurveTo(23,31,21,32);
+    g.quadraticCurveTo(15,33,9,31);
+    g.closePath();
+    g.fill();
+    g.strokeStyle='rgba(0,0,0,.55)';
+    g.lineWidth=0.8;
+    g.stroke();
+
+    g.fillStyle='rgba(255,180,180,.9)';
+    g.beginPath();
+    g.moveTo(10,24.2);
+    g.quadraticCurveTo(15,23.3,20,25);
+    g.lineTo(20,26);
+    g.quadraticCurveTo(15,24.5,10,25.2);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='rgba(250,145,60,.9)';
+    g.beginPath();
+    g.moveTo(9,29);
+    g.quadraticCurveTo(15,30,22,28.5);
+    g.lineTo(22,30);
+    g.quadraticCurveTo(15,31.5,9,30.5);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='rgba(255,80,80,.3)';
+    g.beginPath();g.arc(16,27,6,0,7);g.fill();
+  }
+
+  function drawVIPBody(g,w,h,colors){
+    const bodyGrad=g.createLinearGradient(0,12,0,52);
+    bodyGrad.addColorStop(0,'#fffdf5');
+    bodyGrad.addColorStop(0.08,'#fef9d7');
+    bodyGrad.addColorStop(0.22,'#fde68a');
+    bodyGrad.addColorStop(0.42,'#fcd34d');
+    bodyGrad.addColorStop(0.62,'#f59e0b');
+    bodyGrad.addColorStop(0.86,'#b45309');
+    bodyGrad.addColorStop(1,'#78350f');
+
+    g.fillStyle=bodyGrad;
+    g.beginPath();
+    g.moveTo(8,52);
+    g.lineTo(8,40);
+    g.quadraticCurveTo(8,34,14,32);
+    g.lineTo(24,30);
+    g.quadraticCurveTo(34,28,42,22);
+    g.quadraticCurveTo(50,14,64,12);
+    g.lineTo(126,12);
+    g.quadraticCurveTo(138,12,146,17);
+    g.lineTo(164,30);
+    g.lineTo(180,30);
+    g.quadraticCurveTo(184,30,185,34);
+    g.quadraticCurveTo(186,40,186,45);
+    g.lineTo(186,52);
+    g.lineTo(178,52);
+    g.quadraticCurveTo(178,36,164,36);
+    g.quadraticCurveTo(150,36,150,52);
+    g.lineTo(109,52);
+    g.quadraticCurveTo(109,36,95,36);
+    g.quadraticCurveTo(81,36,81,52);
+    g.lineTo(40,52);
+    g.quadraticCurveTo(40,36,26,36);
+    g.quadraticCurveTo(12,36,12,52);
+    g.closePath();
+    g.fill();
+
+    g.strokeStyle='rgba(69,26,3,.5)';
+    g.lineWidth=1;
+    g.stroke();
+
+    g.strokeStyle='rgba(255,255,255,.95)';
+    g.lineWidth=2;
+    g.beginPath();
+    g.moveTo(52,14);
+    g.quadraticCurveTo(80,11.5,124,11.5);
+    g.quadraticCurveTo(136,11.5,143,14);
+    g.stroke();
+
+    g.strokeStyle='rgba(255,255,255,.9)';
+    g.lineWidth=1.3;
+    g.beginPath();
+    g.moveTo(32,30);
+    g.lineTo(178,30);
+    g.stroke();
+
+    g.fillStyle='rgba(255,255,255,.32)';
+    g.beginPath();
+    g.moveTo(24,20);
+    g.quadraticCurveTo(100,22,178,20);
+    g.lineTo(178,22);
+    g.quadraticCurveTo(100,24,24,22);
+    g.closePath();
+    g.fill();
+
+    const wg=g.createLinearGradient(0,15,0,30);
+    wg.addColorStop(0,'rgba(190,220,255,.6)');
+    wg.addColorStop(0.3,'rgba(30,50,80,.96)');
+    wg.addColorStop(0.75,'rgba(8,15,30,.98)');
+    wg.addColorStop(1,'rgba(4,10,20,.99)');
+
+    const windows=[
+      [38,28,56,15],
+      [60,28,88,14.5],
+      [92,28,118,14.5],
+      [122,28,150,15]
+    ];
+    windows.forEach(([x1,y1,x2,y2],i)=>{
+      g.fillStyle=wg;
+      g.beginPath();
+      if(i===0){
+        g.moveTo(x1,y1);
+        g.lineTo(x1+2,y2);
+        g.quadraticCurveTo(x1+5,y2-1,x1+9,y2);
+        g.lineTo(x2,y2);
+        g.lineTo(x2,y1);
+      } else if(i===3){
+        g.moveTo(x1,y1);
+        g.lineTo(x1,y2);
+        g.lineTo(x2-6,y2);
+        g.quadraticCurveTo(x2-2,y2+0.5,x2,y1+2);
+      } else {
+        g.rect(x1,y2,x2-x1,y1-y2);
+        g.moveTo(x1,y1);
+        g.lineTo(x2,y1);
+      }
+      g.closePath();
+      g.fill();
+    });
+
+    g.fillStyle='rgba(253,224,71,.5)';
+    windows.forEach(([x1,y1,x2,y2])=>{
+      g.beginPath();
+      g.moveTo(x1+3,y2+2);
+      g.lineTo(x1+9,y2+2);
+      g.lineTo(x1+6,y1-2);
+      g.lineTo(x1+2,y1-2);
+      g.closePath();
+      g.fill();
+    });
+
+    g.strokeStyle='rgba(255,255,255,.98)';
+    g.lineWidth=1.6;
+    g.beginPath();
+    g.moveTo(37,28.5);
+    g.lineTo(38,15);
+    g.lineTo(150,15);
+    g.quadraticCurveTo(154,16,156,19);
+    g.stroke();
+    g.beginPath();
+    g.moveTo(36,28.5);
+    g.lineTo(157,28.5);
+    g.stroke();
+
+    [58,90,120].forEach(x=>{
+      g.strokeStyle='rgba(255,255,255,.95)';
+      g.lineWidth=1.4;
+      g.beginPath();
+      g.moveTo(x,15);
+      g.lineTo(x,28.5);
+      g.stroke();
+    });
+
+    g.fillStyle='rgba(30,20,10,.6)';
+    [59,91,121].forEach(x=>{
+      g.fillRect(x,15,1,13.5);
+    });
+
+    g.strokeStyle='rgba(69,26,3,.55)';
+    g.lineWidth=0.8;
+    [60,92,122].forEach(x=>{
+      g.beginPath();
+      g.moveTo(x,28.5);
+      g.lineTo(x,50);
+      g.stroke();
+    });
+
+    drawHandle(g,68,36,'#b45309');
+    drawHandle(g,100,36,'#b45309');
+    drawHandle(g,130,36,'#b45309');
+
+    g.fillStyle='#b45309';
+    g.beginPath();
+    g.moveTo(155,22);
+    g.lineTo(164,20.5);
+    g.lineTo(166,23);
+    g.lineTo(156,24.5);
+    g.closePath();
+    g.fill();
+    g.strokeStyle='rgba(255,255,255,.75)';
+    g.lineWidth=0.6;
+    g.stroke();
+    g.fillStyle='rgba(220,240,255,.6)';
+    g.beginPath();
+    g.moveTo(156,22.5);
+    g.lineTo(163,21.3);
+    g.lineTo(164,22.7);
+    g.lineTo(157,23.8);
+    g.closePath();
+    g.fill();
+
+    const hlGrad=g.createLinearGradient(176,26,188,36);
+    hlGrad.addColorStop(0,'#fffdf0');
+    hlGrad.addColorStop(0.5,'#fef8d5');
+    hlGrad.addColorStop(1,'#e8edf5');
+    g.fillStyle=hlGrad;
+    g.beginPath();
+    g.moveTo(176,26);
+    g.quadraticCurveTo(184,26,186,30);
+    g.quadraticCurveTo(186,34,184,36);
+    g.lineTo(176,36);
+    g.quadraticCurveTo(175,31,176,26);
+    g.closePath();
+    g.fill();
+    g.strokeStyle='rgba(69,26,3,.6)';
+    g.lineWidth=0.9;
+    g.stroke();
+
+    const vLens1=g.createRadialGradient(181,30,0,181,30,4.5);
+    vLens1.addColorStop(0,'rgba(255,255,255,.99)');
+    vLens1.addColorStop(0.4,'rgba(255,245,190,.95)');
+    vLens1.addColorStop(1,'rgba(255,220,120,.6)');
+    g.fillStyle=vLens1;
+    g.beginPath();g.arc(181,30,4,0,7);g.fill();
+
+    const vLens2=g.createRadialGradient(178,33,0,178,33,3);
+    vLens2.addColorStop(0,'rgba(255,255,255,.98)');
+    vLens2.addColorStop(1,'rgba(255,220,120,.5)');
+    g.fillStyle=vLens2;
+    g.beginPath();g.arc(178,33,2.6,0,7);g.fill();
+
+    g.fillStyle='rgba(255,255,255,.95)';
+    g.beginPath();
+    g.moveTo(177,27);
+    g.quadraticCurveTo(182,26.8,185,28.5);
+    g.lineTo(185,29.2);
+    g.quadraticCurveTo(182,27.6,177,27.7);
+    g.closePath();
+    g.fill();
+
+    const tlGrad=g.createLinearGradient(8,26,24,26);
+    tlGrad.addColorStop(0,'#7f1d1d');
+    tlGrad.addColorStop(0.4,'#dc2626');
+    tlGrad.addColorStop(1,'#f87171');
+    g.fillStyle=tlGrad;
+    g.beginPath();
+    g.moveTo(8,27);
+    g.quadraticCurveTo(16,26,24,28);
+    g.quadraticCurveTo(26,30,26,34);
+    g.quadraticCurveTo(26,36,24,37);
+    g.quadraticCurveTo(16,38,8,36);
+    g.closePath();
+    g.fill();
+    g.strokeStyle='rgba(69,26,3,.6)';
+    g.lineWidth=0.9;
+    g.stroke();
+
+    g.fillStyle='rgba(255,220,220,.85)';
+    g.beginPath();
+    g.moveTo(9,28.4);
+    g.quadraticCurveTo(16,27.3,23,29);
+    g.lineTo(23,30);
+    g.quadraticCurveTo(16,28.7,9,29.4);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='rgba(250,150,60,.9)';
+    g.beginPath();
+    g.moveTo(8,34);
+    g.quadraticCurveTo(16,35.5,24,33.5);
+    g.lineTo(24,35);
+    g.quadraticCurveTo(16,37,8,35.5);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='rgba(15,22,35,.9)';
+    g.beginPath();
+    g.moveTo(178,32);
+    g.lineTo(185,32);
+    g.lineTo(185,37);
+    g.lineTo(178,37);
+    g.closePath();
+    g.fill();
+    g.strokeStyle='rgba(253,224,71,.9)';
+    g.lineWidth=0.7;
+    for(let i=0;i<5;i++){
+      g.beginPath();
+      g.moveTo(178,32.6+i*0.9);
+      g.lineTo(185,32.6+i*0.9);
+      g.stroke();
+    }
+
+    g.fillStyle='rgba(0,0,0,.45)';
+    g.beginPath();
+    g.moveTo(176,38);
+    g.lineTo(186,38);
+    g.lineTo(186,45);
+    g.lineTo(176,45);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='rgba(220,235,255,.7)';
+    rr(g,178,40,4,2,0.6);g.fill();
+    rr(g,182,40,3,2,0.6);g.fill();
+
+    g.strokeStyle='rgba(255,255,255,.85)';
+    g.lineWidth=1.4;
+    g.beginPath();
+    g.moveTo(22,49);
+    g.lineTo(180,49);
+    g.stroke();
+
+    g.fillStyle='rgba(0,0,0,.42)';
+    g.beginPath();
+    g.moveTo(8,42);
+    g.lineTo(15,42);
+    g.lineTo(15,50);
+    g.lineTo(8,50);
+    g.closePath();
+    g.fill();
+
+    g.fillStyle='#451a03';
+    rr(g,16,42,18,7,1);g.fill();
+    g.strokeStyle='#fbbf24';
+    g.lineWidth=1;
+    rr(g,16,42,18,7,1);g.stroke();
+    g.fillStyle='#fef3c7';
+    g.font='900 5px Inter, sans-serif';
+    g.textAlign='center';
+    g.textBaseline='middle';
+    g.fillText('VIP 001',25,45.6);
+
+    g.save();
+    g.translate(94,8);
+    const em=g.createRadialGradient(0,0,0,0,0,11);
+    em.addColorStop(0,'rgba(255,255,255,.9)');
+    em.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=em;
+    g.beginPath();g.arc(0,0,11,0,7);g.fill();
+    g.fillStyle='#fef3c7';
+    g.strokeStyle='#78350f';
+    g.lineWidth=0.8;
+    g.beginPath();
+    g.moveTo(-7,4.5);
+    g.lineTo(-7,-5);
+    g.lineTo(-3,1);
+    g.lineTo(0,-6.5);
+    g.lineTo(3,1);
+    g.lineTo(7,-5);
+    g.lineTo(7,4.5);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    g.fillStyle='#ef4444';
+    g.beginPath();g.arc(0,-2,1.2,0,7);g.fill();
+    g.fillStyle='#3b82f6';
+    g.beginPath();g.arc(-3.8,1,0.9,0,7);g.fill();
+    g.beginPath();g.arc(3.8,1,0.9,0,7);g.fill();
+    g.restore();
+
+    g.fillStyle='rgba(35,40,50,.95)';
+    rr(g,8,48,6,2.6,0.6);g.fill();
+    rr(g,15,48,5,2.4,0.6);g.fill();
+    g.fillStyle='rgba(10,15,25,.98)';
+    rr(g,8.5,48.7,5,1.4,0.4);g.fill();
+    rr(g,15.5,48.7,4,1.4,0.4);g.fill();
+
+    g.fillStyle='rgba(0,0,0,.5)';
+    g.beginPath();
+    g.moveTo(41,52);
+    g.lineTo(80,52);
+    g.lineTo(80,50.5);
+    g.lineTo(41,50.5);
+    g.closePath();
+    g.fill();
+    g.beginPath();
+    g.moveTo(110,52);
+    g.lineTo(149,52);
+    g.lineTo(149,50.5);
+    g.lineTo(110,50.5);
+    g.closePath();
+    g.fill();
+  }
+
+  function renderCarBodyToCanvas(colors,isVIP){
+    const w=isVIP?200:130;
+    const h=isVIP?68:60;
+    const scale=2;
+    const c=makeCanvas(w*scale,h*scale);
+    const g=c.getContext('2d');
+    g.scale(scale,scale);
+    if(isVIP) drawVIPBody(g,w,h,colors);
+    else drawRegularBody(g,w,h,colors);
+    return c;
+  }
+  function getCarCanvas(colors,isVIP){
+    const key=(isVIP?'v':'r')+colors.join('_');
+    if(CAR_CACHE.has(key)) return CAR_CACHE.get(key);
+    const c=renderCarBodyToCanvas(colors,isVIP);
+    CAR_CACHE.set(key,c);
+    return c;
+  }
+
+  function resizeCanvas(){
+    const rect=cv.parentElement.getBoundingClientRect();
+    W=Math.max(320,Math.round(rect.width));
+    H=Math.max(240,Math.round(rect.height));
+    if(W<50||H<50) return;
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    cv.width=W*DPR;cv.height=H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.imageSmoothingEnabled=true;
+    bg.width=W*DPR;bg.height=H*DPR;
+    bgCtx.setTransform(DPR,0,0,DPR,0,0);
+    bgCtx.imageSmoothingEnabled=true;
+    renderBackground();
+    layoutPumps();
+    initFireflies();
+    initPuddles();
+  }
+  function initFireflies(){
+    fireflies=[];
+    const n=Math.floor(W/35);
+    for(let i=0;i<n;i++){
+      fireflies.push({
+        x:Math.random()*W,y:H*0.55+Math.random()*H*0.35,
+        phase:Math.random()*Math.PI*2,speed:0.12+Math.random()*0.32,
+        radius:0.8+Math.random()*1.4,
+        hue:Math.random()<0.5?'180,220,120':'150,255,180',
+        amp:8+Math.random()*10
+      });
+    }
+  }
+  function initPuddles(){
+    puddles=[];
+    const n=Math.floor(W/220)+2;
+    for(let i=0;i<n;i++){
+      puddles.push({
+        x:Math.random()*W,y:H*0.62+Math.random()*H*0.28,
+        rx:25+Math.random()*55,ry:4+Math.random()*9,
+        color:Math.random()<0.5?'120,180,255':'80,140,220',
+        alpha:0.08+Math.random()*0.1
+      });
+    }
+  }
+  function rng(seed){let s=seed;return function(){s=(s*9301+49297)%233280;return s/233280;}}
+
+  function renderBackground(){
+    const r=rng(54321);
+    const sky=bgCtx.createLinearGradient(0,0,0,H*0.58);
+    sky.addColorStop(0,'#01030a');
+    sky.addColorStop(0.2,'#030818');
+    sky.addColorStop(0.45,'#061024');
+    sky.addColorStop(0.72,'#0d1e3d');
+    sky.addColorStop(1,'#1a3055');
+    bgCtx.fillStyle=sky;
+    bgCtx.fillRect(0,0,W,H*0.58);
+    for(let i=0;i<180;i++){
+      const x=r()*W,y=r()*H*0.46,rad=r()*1.05+0.15,a=r()*0.6+0.15;
+      bgCtx.fillStyle=`rgba(255,255,255,${a})`;
+      bgCtx.beginPath();bgCtx.arc(x,y,rad,0,7);bgCtx.fill();
+    }
+    const mx=W*0.85,my=H*0.11,mr=Math.max(16,Math.min(26,W*0.027));
+    const halo=bgCtx.createRadialGradient(mx,my,0,mx,my,mr*7);
+    halo.addColorStop(0,'rgba(226,232,240,0.32)');
+    halo.addColorStop(0.3,'rgba(200,220,245,0.12)');
+    halo.addColorStop(1,'rgba(226,232,240,0)');
+    bgCtx.fillStyle=halo;
+    bgCtx.beginPath();bgCtx.arc(mx,my,mr*7,0,7);bgCtx.fill();
+    const moonBody=bgCtx.createRadialGradient(mx-mr*0.4,my-mr*0.4,mr*0.05,mx,my,mr);
+    moonBody.addColorStop(0,'#fffef5');
+    moonBody.addColorStop(0.5,'#f4f7fb');
+    moonBody.addColorStop(0.82,'#d3dae4');
+    moonBody.addColorStop(1,'#8a99ae');
+    bgCtx.fillStyle=moonBody;
+    bgCtx.beginPath();bgCtx.arc(mx,my,mr,0,7);bgCtx.fill();
+    const baseY=H*0.55;
+    bgCtx.fillStyle='#0a1426';
+    bgCtx.beginPath();bgCtx.moveTo(0,baseY);
+    for(let x=0;x<=W;x+=20){
+      const h=baseY-12-Math.sin(x*0.012+r())*14-Math.cos(x*0.02)*7;
+      bgCtx.lineTo(x,h);
+    }
+    bgCtx.lineTo(W,baseY);bgCtx.closePath();bgCtx.fill();
+    bgCtx.fillStyle='#0a1322';
+    let x=-20;
+    while(x<W+20){
+      const bw=28+r()*60,bh=H*0.065+r()*H*0.065;
+      bgCtx.fillRect(x,baseY-bh,bw,bh+8);
+      x+=bw+r()*6+2;
+    }
+    bgCtx.fillStyle='#060e1e';
+    x=-10;
+    const mids=[];
+    while(x<W+20){
+      const bw=32+r()*75,bh=H*0.085+r()*H*0.09;
+      mids.push({x,w:bw,h:bh});
+      bgCtx.fillRect(x,baseY-bh,bw,bh+8);
+      x+=bw+r()*8+4;
+    }
+    mids.forEach(b=>{
+      const cols=Math.floor(b.w/10),rows=Math.floor(b.h/12);
+      for(let i=0;i<cols;i++) for(let j=0;j<rows;j++){
+        if(r()<0.35){
+          const wx=b.x+3+i*10,wy=baseY-b.h+5+j*12;
+          const warm=r();
+          if(warm<0.68) bgCtx.fillStyle=`rgba(251,191,36,${0.55+r()*0.42})`;
+          else if(warm<0.9) bgCtx.fillStyle=`rgba(180,220,255,${0.55+r()*0.42})`;
+          else bgCtx.fillStyle=`rgba(255,180,140,${0.55+r()*0.42})`;
+          bgCtx.fillRect(wx,wy,3,5);
+        }
+      }
+    });
+    const hz=H*0.55;
+    const horizonGlow=bgCtx.createLinearGradient(0,hz-60,0,hz+80);
+    horizonGlow.addColorStop(0,'rgba(56,189,248,0)');
+    horizonGlow.addColorStop(0.4,'rgba(56,189,248,0.16)');
+    horizonGlow.addColorStop(0.7,'rgba(120,180,255,0.09)');
+    horizonGlow.addColorStop(1,'rgba(56,189,248,0)');
+    bgCtx.fillStyle=horizonGlow;
+    bgCtx.fillRect(0,hz-60,W,140);
+    const grd=bgCtx.createLinearGradient(0,baseY,0,H);
+    grd.addColorStop(0,'#3a4560');
+    grd.addColorStop(0.08,'#2e3a52');
+    grd.addColorStop(0.35,'#222b3f');
+    grd.addColorStop(0.7,'#161d2c');
+    grd.addColorStop(1,'#0a0f19');
+    bgCtx.fillStyle=grd;
+    bgCtx.fillRect(0,baseY,W,H-baseY);
+    for(let i=0;i<1400;i++){
+      const x=r()*W,y=baseY+r()*(H-baseY),v=r();
+      bgCtx.fillStyle=`rgba(255,255,255,${v*0.045})`;
+      bgCtx.fillRect(x,y,1,1);
+    }
+    const laneY=baseY+(H-baseY)*0.7;
+    bgCtx.strokeStyle='rgba(235,242,255,0.42)';
+    bgCtx.lineWidth=2.8;
+    bgCtx.setLineDash([38,28]);
+    bgCtx.beginPath();
+    bgCtx.moveTo(0,laneY);
+    bgCtx.lineTo(W,laneY);
+    bgCtx.stroke();
+    bgCtx.setLineDash([]);
+    const neonY=baseY+(H-baseY)*0.08;
+    [[W*0.22,'34,197,94'],[W*0.5,'59,130,246'],[W*0.78,'245,158,11']].forEach(([x,c])=>{
+      const g3=bgCtx.createRadialGradient(x,neonY,0,x,neonY,H*0.32);
+      g3.addColorStop(0,`rgba(${c},0.28)`);
+      g3.addColorStop(0.55,`rgba(${c},0.08)`);
+      g3.addColorStop(1,`rgba(${c},0)`);
+      bgCtx.fillStyle=g3;
+      bgCtx.beginPath();
+      bgCtx.ellipse(x,neonY+30,W*0.2,H*0.24,0,0,7);
+      bgCtx.fill();
+    });
+    const swTop=H*0.72,swH=H*0.18;
+    const sw=bgCtx.createLinearGradient(0,swTop,0,swTop+swH);
+    sw.addColorStop(0,'#2e3a56');
+    sw.addColorStop(0.5,'#242d43');
+    sw.addColorStop(1,'#1a2334');
+    bgCtx.fillStyle=sw;
+    bgCtx.fillRect(0,swTop,W,swH);
+    bgCtx.strokeStyle='rgba(255,255,255,.06)';
+    bgCtx.lineWidth=1;
+    for(let xx=0;xx<W;xx+=48){
+      bgCtx.beginPath();
+      bgCtx.moveTo(xx,swTop);
+      bgCtx.lineTo(xx,swTop+swH);
+      bgCtx.stroke();
+    }
+    const curbY=H*0.84;
+    const curbGrad=bgCtx.createLinearGradient(0,curbY-3,0,curbY+3);
+    curbGrad.addColorStop(0,'#3f4d6a');
+    curbGrad.addColorStop(0.5,'#2e3a55');
+    curbGrad.addColorStop(1,'#1a2234');
+    bgCtx.fillStyle=curbGrad;
+    bgCtx.fillRect(0,curbY-3,W,6);
+    bgCtx.fillStyle='rgba(255,255,255,.12)';
+    bgCtx.fillRect(0,curbY-3,W,1);
+    bgCtx.fillStyle='rgba(0,0,0,.4)';
+    bgCtx.fillRect(0,curbY+3,W,2);
+    for(let xx=0;xx<W;xx+=80){
+      bgCtx.fillStyle='rgba(250,204,21,.6)';
+      bgCtx.fillRect(xx,curbY-3,42,3);
+    }
+    const cy=H*0.27;
+    const ch=Math.max(42,Math.min(56,H*0.068));
+    const padX=W*0.055;
+    const cw=W-padX*2;
+    const supX1=padX+cw*0.1,supX2=padX+cw*0.9;
+    const supTop=cy+ch,supH=H*0.44,supW=18;
+    [supX1,supX2].forEach(sx=>{
+      const supG=bgCtx.createLinearGradient(sx-supW/2,0,sx+supW/2,0);
+      supG.addColorStop(0,'#b3bfd3');
+      supG.addColorStop(0.5,'#6d7f9d');
+      supG.addColorStop(1,'#364159');
+      bgCtx.fillStyle=supG;
+      bgCtx.fillRect(sx-supW/2,supTop,supW,supH);
+      bgCtx.fillStyle='rgba(255,255,255,.3)';
+      bgCtx.fillRect(sx-supW/2+1.5,supTop,2,supH);
+    });
+    for(let i=0;i<6;i++){
+      const lx=padX+cw*(i+0.5)/6,ly=cy+ch-2;
+      bgCtx.fillStyle='#1a2234';
+      bgCtx.beginPath();bgCtx.ellipse(lx,ly,9,3.5,0,0,7);bgCtx.fill();
+      bgCtx.fillStyle='rgba(255,245,215,.98)';
+      bgCtx.beginPath();bgCtx.ellipse(lx,ly+1.2,7,2.2,0,0,7);bgCtx.fill();
+      const lg=bgCtx.createRadialGradient(lx,ly,0,lx,ly,70);
+      lg.addColorStop(0,'rgba(255,245,215,.42)');
+      lg.addColorStop(0.45,'rgba(255,245,215,.12)');
+      lg.addColorStop(1,'rgba(255,245,215,0)');
+      bgCtx.fillStyle=lg;
+      bgCtx.beginPath();bgCtx.ellipse(lx,ly+34,52,68,0,0,7);bgCtx.fill();
+    }
+    const roofGrad=bgCtx.createLinearGradient(0,cy,0,cy+ch);
+    roofGrad.addColorStop(0,'#fbfdff');
+    roofGrad.addColorStop(0.36,'#dde5ef');
+    roofGrad.addColorStop(0.68,'#a4b3ca');
+    roofGrad.addColorStop(1,'#48546a');
+    bgCtx.fillStyle=roofGrad;
+    rr(bgCtx,padX,cy,cw,ch,9);bgCtx.fill();
+    bgCtx.fillStyle='rgba(255,255,255,.85)';
+    bgCtx.fillRect(padX+9,cy+1,cw-18,1.8);
+    const neonY2=cy+ch-9,neonH=8,seg=cw/3;
+    [['#22c55e','#0f7a3a'],['#3b82f6','#1e40af'],['#f59e0b','#92400e']].forEach((c,i)=>{
+      const sg=bgCtx.createLinearGradient(0,neonY2,0,neonY2+neonH);
+      sg.addColorStop(0,c[0]);sg.addColorStop(1,c[1]);
+      bgCtx.fillStyle=sg;
+      bgCtx.fillRect(padX+seg*i,neonY2,seg,neonH);
+    });
+    const neonGlow=bgCtx.createLinearGradient(0,neonY2-6,0,neonY2+neonH+70);
+    neonGlow.addColorStop(0,'rgba(140,210,255,0.48)');
+    neonGlow.addColorStop(0.35,'rgba(140,210,255,0.16)');
+    neonGlow.addColorStop(1,'rgba(140,210,255,0)');
+    bgCtx.fillStyle=neonGlow;
+    bgCtx.fillRect(padX,neonY2-6,cw,neonH+76);
+  }
+
+  function layoutPumps(){
+    if(!S) return;
+    const n=pumpCount();
+    pumpXCanvas=[];
+    for(let i=0;i<n;i++){
+      const pct=n===1?0.5:0.16+(0.68*i/(n-1));
+      pumpXCanvas.push(W*pct);
+    }
+    const ns=new Array(n).fill(null);
+    for(let i=0;i<Math.min(n,pumpSlots.length);i++) ns[i]=pumpSlots[i];
+    pumpSlots=ns;
+  }
+  function drawPump(x,i,time){
+    const baseY=H*0.80;
+    const pw=56,ph=130;
+    const scale=Math.min(1.15,Math.max(0.82,W/1000));
+    const sh=ctx.createRadialGradient(x,baseY+2,0,x,baseY+2,40*scale);
+    sh.addColorStop(0,'rgba(0,0,0,.58)');
+    sh.addColorStop(0.55,'rgba(0,0,0,.22)');
+    sh.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sh;
+    ctx.beginPath();
+    ctx.ellipse(x,baseY+2,40*scale,8*scale,0,0,7);
+    ctx.fill();
+    const c=getPumpCanvas();
+    const dw=pw*scale,dh=ph*scale;
+    ctx.drawImage(c,x-dw/2,baseY-dh,dw,dh);
+    const blink=Math.sin(time*3+i)>0?0.85:0.35;
+    ctx.fillStyle=`rgba(90,255,150,${blink*0.55})`;
+    const sgx=x-dw/2+dw*0.21;
+    const sgy=baseY-dh+dh*0.185;
+    const sgw=dw*0.46,sgh=dh*0.15;
+    ctx.fillRect(sgx,sgy,sgw,sgh);
+    ctx.fillStyle=`rgba(90,255,150,${blink*0.18})`;
+    ctx.fillRect(sgx-4,sgy-4,sgw+8,sgh+8);
+  }
+
+  function drawRegularCar(car,time){
+    const baseY=H*0.84;
+    const s=Math.min(1.15,Math.max(0.85,W/900));
+    const x=car.x;
+    const wheelRot=car.wheelRot||0;
+    const carW=130,carH=60;
+    const cw=carW*s,ch=carH*s;
+    const body=getCarCanvas(car.colors,false);
+
+    const sh=ctx.createRadialGradient(x,baseY+2,0,x,baseY+2,58*s);
+    sh.addColorStop(0,'rgba(0,0,0,.65)');
+    sh.addColorStop(0.55,'rgba(0,0,0,.24)');
+    sh.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sh;
+    ctx.beginPath();
+    ctx.ellipse(x,baseY+2,58*s,8*s,0,0,7);
+    ctx.fill();
+
+    if(car.state==='arriving'){
+      const beamG=ctx.createLinearGradient(x+52*s,baseY-26*s,x+160*s,baseY-26*s);
+      beamG.addColorStop(0,'rgba(255,248,214,.55)');
+      beamG.addColorStop(0.5,'rgba(255,248,214,.18)');
+      beamG.addColorStop(1,'rgba(255,248,214,0)');
+      ctx.fillStyle=beamG;
+      ctx.beginPath();
+      ctx.moveTo(x+52*s,baseY-28*s);
+      ctx.lineTo(x+165*s,baseY-36*s);
+      ctx.lineTo(x+165*s,baseY-4*s);
+      ctx.lineTo(x+52*s,baseY-15*s);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    drawWheel(ctx,x-39*s,baseY-14*s,13*s,wheelRot,false);
+    drawWheel(ctx,x+39*s,baseY-14*s,13*s,wheelRot,false);
+
+    ctx.drawImage(body,x-cw/2,baseY-ch,cw,ch);
+
+    const hlx=x+52*s,hly=baseY-20*s;
+    const hg=ctx.createRadialGradient(hlx,hly,0,hlx,hly,22*s);
+    hg.addColorStop(0,'rgba(255,248,214,.95)');
+    hg.addColorStop(0.4,'rgba(255,248,214,.4)');
+    hg.addColorStop(1,'rgba(255,248,214,0)');
+    ctx.fillStyle=hg;
+    ctx.beginPath();
+    ctx.arc(hlx,hly,22*s,0,7);
+    ctx.fill();
+
+    const tlx=x-52*s,tly=baseY-18*s;
+    const tl=ctx.createRadialGradient(tlx,tly,0,tlx,tly,15*s);
+    tl.addColorStop(0,'rgba(239,68,68,.8)');
+    tl.addColorStop(1,'rgba(239,68,68,0)');
+    ctx.fillStyle=tl;
+    ctx.beginPath();
+    ctx.arc(tlx,tly,15*s,0,7);
+    ctx.fill();
+
+    const rf=ctx.createLinearGradient(x,baseY,x,baseY+12*s);
+    rf.addColorStop(0,`rgba(${hexToRgbArr(car.colors[1])},0.32)`);
+    rf.addColorStop(1,`rgba(${hexToRgbArr(car.colors[1])},0)`);
+    ctx.fillStyle=rf;
+    ctx.beginPath();
+    ctx.ellipse(x,baseY+5*s,55*s,5*s,0,0,7);
+    ctx.fill();
+
+    if(car.state==='serving'){
+      for(let i=0;i<5;i++){
+        const t=(time*2+i*0.32)%1;
+        const sx=x+26*s+Math.sin(time*3+i)*6*s;
+        const sy=baseY-30*s-t*26*s;
+        ctx.fillStyle=`rgba(250,204,21,${1-t})`;
+        ctx.beginPath();ctx.arc(sx,sy,2*s,0,7);ctx.fill();
+      }
+    }
+    if(car.state==='leaving'&&Math.random()<0.32){
+      particles.push({
+        x:x-56*s,y:baseY-6*s,
+        vx:-22-Math.random()*24,vy:-14-Math.random()*14,
+        life:1,maxLife:1,size:4+Math.random()*4,
+        color:'120,140,170',type:'smoke'
+      });
+    }
+  }
+
+  function drawVIPCar(car,time){
+    const baseY=H*0.84;
+    const s=Math.min(1.15,Math.max(0.85,W/900))*1.05;
+    const x=car.x;
+    const wheelRot=car.wheelRot||0;
+    const carW=200,carH=68;
+    const cw=carW*s,ch=carH*s;
+    const body=getCarCanvas(car.colors,true);
+
+    const aura=ctx.createRadialGradient(x,baseY,0,x,baseY,120*s);
+    aura.addColorStop(0,'rgba(251,191,36,.55)');
+    aura.addColorStop(0.4,'rgba(251,191,36,.2)');
+    aura.addColorStop(1,'rgba(251,191,36,0)');
+    ctx.fillStyle=aura;
+    ctx.beginPath();
+    ctx.ellipse(x,baseY,125*s,26*s,0,0,7);
+    ctx.fill();
+
+    const sh=ctx.createRadialGradient(x,baseY+2,0,x,baseY+2,95*s);
+    sh.addColorStop(0,'rgba(0,0,0,.75)');
+    sh.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sh;
+    ctx.beginPath();
+    ctx.ellipse(x,baseY+2,95*s,12*s,0,0,7);
+    ctx.fill();
+
+    if(car.state==='arriving'){
+      const beamG=ctx.createLinearGradient(x+85*s,baseY-24*s,x+230*s,baseY-24*s);
+      beamG.addColorStop(0,'rgba(255,248,214,.85)');
+      beamG.addColorStop(0.5,'rgba(255,248,214,.26)');
+      beamG.addColorStop(1,'rgba(255,248,214,0)');
+      ctx.fillStyle=beamG;
+      ctx.beginPath();
+      ctx.moveTo(x+80*s,baseY-30*s);
+      ctx.lineTo(x+240*s,baseY-40*s);
+      ctx.lineTo(x+240*s,baseY-4*s);
+      ctx.lineTo(x+80*s,baseY-15*s);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    drawWheel(ctx,x-69*s,baseY-16*s,15*s,wheelRot,true);
+    drawWheel(ctx,x,baseY-16*s,15*s,wheelRot,true);
+    drawWheel(ctx,x+69*s,baseY-16*s,15*s,wheelRot,true);
+
+    ctx.drawImage(body,x-cw/2,baseY-ch,cw,ch);
+
+    [[86,-24],[90,-22]].forEach(([dx,dy])=>{
+      const hlx=x+dx*s,hly=baseY+dy*s;
+      const hg=ctx.createRadialGradient(hlx,hly,0,hlx,hly,26*s);
+      hg.addColorStop(0,'rgba(255,248,214,.98)');
+      hg.addColorStop(0.4,'rgba(255,248,214,.5)');
+      hg.addColorStop(1,'rgba(255,248,214,0)');
+      ctx.fillStyle=hg;
+      ctx.beginPath();
+      ctx.arc(hlx,hly,26*s,0,7);
+      ctx.fill();
+    });
+
+    const tlx=x-88*s,tly=baseY-24*s;
+    const tl=ctx.createRadialGradient(tlx,tly,0,tlx,tly,18*s);
+    tl.addColorStop(0,'rgba(239,68,68,.9)');
+    tl.addColorStop(1,'rgba(239,68,68,0)');
+    ctx.fillStyle=tl;
+    ctx.beginPath();
+    ctx.arc(tlx,tly,18*s,0,7);
+    ctx.fill();
+
+    if(Math.random()<0.85){
+      const angle=Math.random()*Math.PI*2;
+      const r=40+Math.random()*80;
+      particles.push({
+        x:x+Math.cos(angle)*r*s,
+        y:baseY-32*s+Math.sin(angle)*r*0.45*s,
+        vx:(Math.random()-0.5)*26,
+        vy:-26-Math.random()*48,
+        life:1,maxLife:1,size:2+Math.random()*2.4,
+        color:Math.random()<0.5?'253,224,71':'251,191,36',
+        type:'spark'
+      });
+    }
+
+    if(car.state==='serving'){
+      for(let i=0;i<10;i++){
+        const t=(time*2+i*0.22)%1;
+        const sx=x+34*s+Math.sin(time*3+i*0.9)*8*s;
+        const sy=baseY-38*s-t*30*s;
+        ctx.fillStyle=`rgba(253,224,71,${1-t})`;
+        ctx.beginPath();ctx.arc(sx,sy,2.6*s,0,7);ctx.fill();
+      }
+    }
+  }
+
+  function hexToRgbArr(hex){
+    const h=hex.replace('#','');
+    return `${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)}`;
+  }
+
+  function updateParticles(dt){
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
+      p.x+=p.vx*dt;p.y+=p.vy*dt;
+      p.vx*=0.96;p.vy*=0.96;
+      p.life-=dt/p.maxLife;
+      if(p.type==='smoke') p.size+=dt*9;
+      if(p.life<=0) particles.splice(i,1);
+    }
+  }
+  function drawParticles(){
+    particles.forEach(p=>{
+      const a=Math.max(0,p.life);
+      if(p.type==='smoke'){
+        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size);
+        g.addColorStop(0,`rgba(${p.color},${a*0.4})`);
+        g.addColorStop(1,`rgba(${p.color},0)`);
+        ctx.fillStyle=g;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,7);ctx.fill();
+      } else if(p.type==='spark'){
+        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*3.5);
+        g.addColorStop(0,`rgba(${p.color},${a*0.7})`);
+        g.addColorStop(1,`rgba(${p.color},0)`);
+        ctx.fillStyle=g;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.size*3.5,0,7);ctx.fill();
+        ctx.fillStyle=`rgba(${p.color},${a})`;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,7);ctx.fill();
+      }
+    });
+  }
+  function addFloater(x,y,text,color,size){
+    floaters.push({x,y,text,color,life:1.4,maxLife:1.4,size:size||13});
+  }
+  function updateFloaters(dt){
+    for(let i=floaters.length-1;i>=0;i--){
+      const f=floaters[i];
+      f.life-=dt;f.y-=dt*58;
+      if(f.life<=0) floaters.splice(i,1);
+    }
+  }
+  function drawFloaters(){
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    floaters.forEach(f=>{
+      const t=1-f.life/f.maxLife;
+      const a=f.life>0.5?1:(f.life*2);
+      const scale=t<0.15?(t/0.15)*1.05:(1.05-(t-0.15)*0.05);
+      ctx.save();
+      ctx.globalAlpha=a;
+      ctx.translate(f.x,f.y);ctx.scale(scale,scale);
+      ctx.font=`900 ${f.size}px Inter,system-ui,sans-serif`;
+      ctx.lineWidth=3.2;ctx.strokeStyle='rgba(0,0,0,.88)';
+      ctx.strokeText(f.text,0,0);
+      ctx.fillStyle=f.color;
+      ctx.fillText(f.text,0,0);
+      ctx.restore();
+    });
+    ctx.textAlign='left';
+    ctx.textBaseline='alphabetic';
+  }
+  function drawPuddles(time){
+    ctx.save();
+    puddles.forEach(p=>{
+      const shimmer=0.7+Math.sin(time*0.8+p.x*0.01)*0.3;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.rx);
+      g.addColorStop(0,`rgba(${p.color},${p.alpha*shimmer})`);
+      g.addColorStop(1,`rgba(${p.color},0)`);
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.ellipse(p.x,p.y,p.rx,p.ry,0,0,7);ctx.fill();
+    });
+    ctx.restore();
+  }
+  function drawFireflies(time){
+    ctx.save();
+    fireflies.forEach(f=>{
+      const x=f.x+Math.sin(time*f.speed+f.phase)*f.amp;
+      const y=f.y+Math.cos(time*f.speed*1.3+f.phase*1.7)*f.amp*0.5;
+      const glow=0.5+Math.sin(time*f.speed*2+f.phase)*0.5;
+      const g=ctx.createRadialGradient(x,y,0,x,y,f.radius*4.5);
+      g.addColorStop(0,`rgba(${f.hue},${glow*0.8})`);
+      g.addColorStop(1,`rgba(${f.hue},0)`);
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.arc(x,y,f.radius*4.5,0,7);ctx.fill();
+      ctx.fillStyle=`rgba(${f.hue},${glow})`;
+      ctx.beginPath();ctx.arc(x,y,f.radius,0,7);ctx.fill();
+    });
+    ctx.restore();
+  }
+  function renderScene(time){
+    if(W<10||H<10) return;
+    ctx.clearRect(0,0,W,H);
+    ctx.drawImage(bg,0,0,W,H);
+    drawPuddles(time);
+    drawFireflies(time);
+    if(pumpXCanvas){
+      for(let i=0;i<pumpXCanvas.length;i++) drawPump(pumpXCanvas[i],i,time);
+    }
+    allCars.forEach(c=>{
+      if(c.isVIP) drawVIPCar(c,time);
+      else drawRegularCar(c,time);
+    });
+    drawParticles();
+    drawFloaters();
+  }
+
+  function initGame(){
+    const saved=currentUser?DB.loadGameState(currentUser.id):null;
+    const DEF_PRICE={ai95:58.2,ai98:70.6,dt:63.8};
+    const DEF_FUEL={ai95:2000,ai98:800,dt:1200};
+    S={
+      money:saved?saved.money:150000,
+      day:saved?saved.day:1,dayTime:0,
+      reputation:saved?saved.reputation:50,
+      fuel:saved&&saved.fuel?{...DEF_FUEL,...saved.fuel}:{...DEF_FUEL},
+      market:Object.assign({},BASE_MARKET),
+      price:saved&&saved.price?{...DEF_PRICE,...saved.price}:{...DEF_PRICE},
+      upg:saved&&saved.upg?{...saved.upg}:{pumps:1,shop:0,cafe:0,wash:0,staff:0,tanks:0},
+      adDays:0,vipTotal:saved?saved.vipTotal:0
+    };
+    dayStats={revenue:0,served:0,liters:0,lost:0,extra:0,vip:0,vipRevenue:0};
+    queue=[];allCars=[];particles=[];floaters=[];
+    pumpSlots=[];pumpXCanvas=[];
+    paused=false;over=false;lastT=0;spawnTimer=2;
+    disp={money:S.money,served:0,rep:S.reputation,demand:1,vip:0};
+    prevDisp={money:S.money,served:0,vip:0};
+    activeEvent=null;activeEventTime=0;eventCheckTimer=25;eventModalOpen=false;
+    eventCircle.classList.remove('on');
+    eventOverlay.classList.remove('on');
+    eventModal.classList.remove('show');
+    logEl.innerHTML='';
+    layoutPumps();
+    buildFuelPanel();
+    buildUpgradePanel();
+    updateAllUI();
+    updateVipHud();
+    log('⛽ Добро пожаловать! Вы открыли свою АЗС.');
+    if(currentUser) log(`👤 Вошли как <b>${currentUser.login}</b> (${currentUser.role})`,'admin');
+    toast('⛽ АЗС открыта!','good');
+  }
+
+  const fuelUI={};
+  function buildFuelPanel(){
+    const wrap=document.getElementById('fuelList');
+    wrap.innerHTML='';
+    FKEYS.forEach(k=>{
+      const f=FUELS[k];
+      const row=document.createElement('div');
+      row.className='fuel';
+      row.style.setProperty('--fc',f.color);
+      row.innerHTML=`
+        <div class="fuel-head">
+          <span class="dot" style="background:${f.color};color:${f.color}"></span>
+          <span class="fuel-name">${f.name}</span>
+          <span class="fuel-amt" data-el="amt"></span>
+        </div>
+        <div class="bar"><div class="bar-fill" data-el="bar" style="background:linear-gradient(90deg,${f.color},${f.color}cc);width:0%"></div></div>
+        <div class="fuel-body">
+          <div class="fuel-col">
+            <div class="fuel-label">Закупка</div>
+            <div class="market" data-el="mkt"></div>
+            <div class="margin" data-el="mrg"></div>
+          </div>
+          <div class="fuel-col">
+            <div class="fuel-label">Цена, ₽/л</div>
+            <div class="price-ctl">
+              <button data-act="dec" data-f="${k}">−</button>
+              <input type="text" inputmode="decimal" data-price="${k}">
+              <button data-act="inc" data-f="${k}">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="buy-row">
+          <button class="buy-btn" data-buy="500" data-f="${k}"></button>
+          <button class="buy-btn" data-buy="max" data-f="${k}">Макс</button>
+        </div>`;
+      wrap.appendChild(row);
+      fuelUI[k]={
+        amt:row.querySelector('[data-el="amt"]'),
+        bar:row.querySelector('[data-el="bar"]'),
+        mkt:row.querySelector('[data-el="mkt"]'),
+        mrg:row.querySelector('[data-el="mrg"]'),
+        input:row.querySelector('input'),
+        buy500:row.querySelector('[data-buy="500"]'),
+        buyMax:row.querySelector('[data-buy="max"]')
+      };
+      fuelUI[k].input.addEventListener('input',e=>{
+        const v=parseRuNumber(e.target.value);
+        if(!isNaN(v)&&v>0) S.price[k]=Math.min(v,999);
+      });
+      fuelUI[k].input.addEventListener('blur',e=>{
+        let v=parseRuNumber(e.target.value);
+        if(isNaN(v)||v<=0) v=1;
+        v=clamp(v,1,500);
+        S.price[k]=v;
+        e.target.value=fmt2(v);
+      });
+    });
+    wrap.addEventListener('click',e=>{
+      const btn=e.target.closest('button');
+      if(!btn) return;
+      const k=btn.dataset.f;
+      if(btn.dataset.act==='dec') S.price[k]=Math.max(1,+(S.price[k]-0.5).toFixed(2));
+      if(btn.dataset.act==='inc') S.price[k]=Math.min(999,+(S.price[k]+0.5).toFixed(2));
+      if(btn.dataset.buy==='500') buyFuel(k,500);
+      if(btn.dataset.buy==='max') buyFuel(k,Infinity);
+    });
+  }
+  function buyFuel(k,liters){
+    const cap=capacity(k);
+    const free=cap-S.fuel[k];
+    if(free<=1){log(`🛢️ Резервуар ${FUELS[k].name} полон!`,'warn');toast('🛢️ Бак полон','warn');return}
+    const canAfford=Math.floor(S.money/S.market[k]);
+    let amount=Math.min(liters,free,canAfford);
+    amount=Math.floor(amount/50)*50;
+    if(amount<50){log(`💸 Недостаточно денег на закупку ${FUELS[k].name}.`,'bad');toast('💸 Мало денег','bad');return}
+    const cost=amount*S.market[k];
+    S.money-=cost;S.fuel[k]+=amount;
+    log(`🚛 Закуплено ${fmt(amount)} л ${FUELS[k].name} за ${fmt(cost)} ₽`,'good');
+  }
+  function updateFuelPanel(){
+    FKEYS.forEach(k=>{
+      const u=fuelUI[k];
+      if(!u) return;
+      const cap=capacity(k);
+      const pct=clamp(S.fuel[k]/cap*100,0,100);
+      u.amt.textContent=`${fmt(S.fuel[k])} / ${fmt(cap)} л`;
+      u.bar.style.width=pct+'%';
+      u.mkt.textContent=fmt2(S.market[k])+' ₽/л';
+      const m=S.price[k]-S.market[k];
+      u.mrg.textContent=(m>=0?'+':'')+fmt2(m)+' ₽/л';
+      u.mrg.style.color=m>3?'#4ade80':m>0?'#fbbf24':'#f87171';
+      if(document.activeElement!==u.input){
+        const pk=(typeof S.price[k]==='number'&&!isNaN(S.price[k]))?S.price[k]:0;
+        u.input.value=fmt2(pk);
+      }
+      const cost500=Math.ceil(S.market[k]*500);
+      u.buy500.textContent=`+500 л · ${fmt(cost500)} ₽`;
+      u.buy500.disabled=S.money<cost500||S.fuel[k]+500>cap;
+      u.buyMax.disabled=S.fuel[k]>=cap-50||S.money<S.market[k]*50;
+    });
+  }
+
+  function buildUpgradePanel(){
+    const wrap=document.getElementById('upgList');
+    wrap.innerHTML='';
+    UPGRADES.forEach(u=>{
+      const el=document.createElement('div');
+      el.className='upg';
+      el.dataset.id=u.id;
+      el.innerHTML=`
+        <div class="upg-ico">${u.icon}</div>
+        <div class="upg-info">
+          <div class="upg-name">${u.name}</div>
+          <div class="upg-desc"></div>
+          <div class="upg-pips"></div>
+        </div>
+        <button class="upg-buy"></button>`;
+      wrap.appendChild(el);
+    });
+    wrap.addEventListener('click',e=>{
+      const btn=e.target.closest('.upg-buy');
+      if(!btn||btn.disabled) return;
+      const id=btn.closest('.upg').dataset.id;
+      buyUpgrade(id);
+    });
+    document.getElementById('adBtn').addEventListener('click',()=>{
+      if(S.money<9000) return;
+      S.money-=9000;S.adDays=1;
+      log('📣 Реклама запущена! Поток клиентов увеличен на день.','good');
+      toast('📣 Реклама запущена!','good');
+    });
+  }
+  function buyUpgrade(id){
+    const u=UPGRADES.find(x=>x.id===id);
+    const lvl=S.upg[id];
+    if(lvl>=u.max) return;
+    const cost=u.cost(lvl);
+    if(S.money<cost) return;
+    S.money-=cost;S.upg[id]++;
+    if(id==='pumps') layoutPumps();
+    log(`🔧 Улучшение «${u.name}» → ур. ${S.upg[id]} (${fmt(cost)} ₽)`,'good');
+    toast(`${u.icon} ${u.name} ур. ${S.upg[id]}`,'good');
+  }
+  function updateUpgradePanel(){
+    const wrap=document.getElementById('upgList');
+    UPGRADES.forEach(u=>{
+      const el=wrap.querySelector(`[data-id="${u.id}"]`);
+      if(!el) return;
+      const lvl=S.upg[u.id];
+      el.querySelector('.upg-desc').textContent=u.desc(lvl);
+      const pips=el.querySelector('.upg-pips');
+      if(pips.children.length!==u.max){
+        pips.innerHTML='';
+        for(let i=0;i<u.max;i++){const p=document.createElement('div');p.className='pip';pips.appendChild(p);}
+      }
+      const kids=pips.children;
+      for(let i=0;i<kids.length;i++) kids[i].classList.toggle('on',i<lvl);
+      const btn=el.querySelector('.upg-buy');
+      if(lvl>=u.max){btn.textContent='МАКС';btn.disabled=true;}
+      else{btn.textContent=fmt(u.cost(lvl))+' ₽';btn.disabled=S.money<u.cost(lvl);}
+    });
+    const adBtn=document.getElementById('adBtn');
+    if(S.adDays>0){adBtn.textContent=`✅ Активна (${S.adDays} дн.)`;adBtn.disabled=true;}
+    else{adBtn.textContent='Запустить · 9 000 ₽';adBtn.disabled=S.money<9000;}
+  }
+
+  function priceSensitivity(){return getEventMod('sensitivity',1);}
+  function effectiveRatio(k){return (S.price[k]/S.market[k])*priceSensitivity();}
+  function avgPriceRatio(){
+    let r=0;
+    for(let i=0;i<FKEYS.length;i++) r+=effectiveRatio(FKEYS[i]);
+    return r/FKEYS.length;
+  }
+  function getDemand(){
+    const repF=0.4+(S.reputation/100)*1.2;
+    const ratio=avgPriceRatio();
+    let pf;
+    if(ratio<=1.15) pf=1.10;
+    else if(ratio<1.45) pf=1.10-(ratio-1.15)/0.30*0.95;
+    else pf=0.10;
+    const ad=S.adDays>0?1.6:1;
+    const pumpF=0.62+pumpCount()*0.13;
+    let d=Math.max(0.05,repF*pf*ad*pumpF);
+    d*=getEventMod('demandMultiplier',1);
+    return d;
+  }
+  function getVIPChance(){
+    let c=0.005+(S.reputation/100)*0.025;
+    c*=getEventMod('vipMultiplier',1);
+    return c;
+  }
+  function scheduleSpawn(){
+    const demand=getDemand();
+    const perDay=35*demand;
+    const base=DAY_LENGTH/Math.max(perDay,0.4);
+    spawnTimer=base*(0.55+Math.random()*0.9);
+  }
+  function turnAwayChance(ratio){
+    if(ratio<=1.12) return 0;
+    if(ratio>=1.50) return 0.95;
+    return (ratio-1.12)/0.38*0.95;
+  }
+  function spawnCustomer(){
+    const k=FKEYS[Math.floor(Math.random()*FKEYS.length)];
+    const ratio=effectiveRatio(k);
+    const isVIP=Math.random()<getVIPChance();
+    if(Math.random()<turnAwayChance(ratio)){
+      S.reputation=Math.max(0,S.reputation-0.06);
+      addFloater(W*0.15,H*0.6,'😤 дорого!','#f87171');
+      return;
+    }
+    const litersMult=getEventMod('litersMultiplier',1);
+    const liters=(15+Math.random()*45)*litersMult;
+    const colors=isVIP?VIP_GOLD:CAR_COLORS[Math.floor(Math.random()*CAR_COLORS.length)];
+    const car={
+      x:-100,targetX:-100,y:0,
+      state:'queue',pump:-1,timer:0,
+      fuelKey:k,liters,colors,wheelRot:0,isVIP
+    };
+    if(queue.length>=6&&!isVIP){
+      car.state='leaving';car.targetX=W+150;
+      allCars.push(car);
+      S.reputation=Math.max(0,S.reputation-0.3);
+      return;
+    }
+    if(isVIP){
+      queue.unshift(car);
+      showVIPBanner();
+      for(let i=0;i<40;i++){
+        const angle=Math.random()*Math.PI*2;
+        const speed=40+Math.random()*120;
+        particles.push({
+          x:W*0.1,y:H*0.55,
+          vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed*0.55-40,
+          life:1.2,maxLife:1.2,size:1.8+Math.random()*2.8,
+          color:Math.random()<0.5?'253,224,71':'251,191,36',type:'spark'
+        });
+      }
+      log('👑 VIP-гость прибыл! Приоритетное обслуживание.','vip');
+      toast('👑 VIP-гость прибыл!','vip');
+    } else queue.push(car);
+    allCars.push(car);
+  }
+  function assignPump(car,p){
+    car.pump=p;car.state='arriving';
+    car.targetX=pumpXCanvas[p];
+    pumpSlots[p]=car;
+  }
+  function serviceTime(){
+    const base=3.4;
+    const staffBonus=1-S.upg.staff*0.15;
+    const pumpBonus=1-(S.upg.pumps-1)*0.06;
+    return Math.max(0.9,base*staffBonus*pumpBonus);
+  }
+  function updateCars(dt){
+    for(let p=0;p<pumpSlots.length;p++){
+      if(!pumpSlots[p]&&queue.length){
+        let idx=queue.findIndex(c=>c.isVIP);
+        if(idx<0) idx=0;
+        const car=queue.splice(idx,1)[0];
+        assignPump(car,p);
+      }
+    }
+    for(let i=allCars.length-1;i>=0;i--){
+      const car=allCars[i];
+      const follow=1-Math.pow(0.000001,dt);
+      car.x+=(car.targetX-car.x)*follow;
+      if(Math.abs(car.targetX-car.x)>0.5) car.wheelRot+=(car.targetX-car.x)*dt*0.15;
+      if(car.state==='arriving'){
+        if(Math.abs(car.x-car.targetX)<3){
+          car.state='serving';car.timer=serviceTime();
+        }
+      } else if(car.state==='serving'){
+        car.timer-=dt;
+        if(car.timer<=0) completeService(car);
+      } else if(car.state==='leaving'){
+        if(car.x>W+110) removeCar(car,i);
+      }
+    }
+  }
+  function completeService(car){
+    const k=car.fuelKey;
+    const avail=S.fuel[k];
+    const px=car.x,py=H*0.84;
+    const isVIP=car.isVIP;
+    if(avail<5){
+      const repLoss=isVIP?2.5:1.2;
+      S.reputation=Math.max(0,S.reputation-repLoss);
+      dayStats.lost++;
+      addFloater(px,py-40,`❌ нет ${FUELS[k].name}`,'#f87171');
+      log(`❌ ${isVIP?'VIP-гость':'Клиент'} уехал без ${FUELS[k].name}.`,'bad');
+      toast(`❌ ${FUELS[k].name} закончился`,'bad');
+    } else {
+      const sold=Math.min(avail,car.liters);
+      const vipPayMult=isVIP?getEventMod('vipPayMultiplier',1):1;
+      const mult=isVIP?3*vipPayMult:1;
+      const income=sold*S.price[k]*mult;
+      S.fuel[k]-=sold;S.money+=income;
+      dayStats.revenue+=income;dayStats.liters+=sold;dayStats.served++;
+      const repGain=isVIP?0.25:0.035;
+      S.reputation=Math.min(100,S.reputation+repGain);
+      if(isVIP){
+        dayStats.vip++;dayStats.vipRevenue+=income;
+        S.vipTotal=(S.vipTotal||0)+1;
+        addFloater(px,py-40,`👑 +${fmt(income)} ₽`,'#fbbf24',16);
+        for(let i=0;i<34;i++){
+          const angle=Math.random()*Math.PI*2;
+          const speed=50+Math.random()*130;
+          particles.push({
+            x:px,y:py-26,
+            vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed*0.6-50,
+            life:1.2,maxLife:1.2,size:2+Math.random()*2.6,
+            color:Math.random()<0.5?'253,224,71':'251,191,36',type:'spark'
+          });
+        }
+        log(`👑 VIP оплатил ${fmt(income)} ₽ (×${3*vipPayMult})!`,'vip');
+        toast(`👑 VIP: +${fmt(income)} ₽`,'vip');
+      } else {
+        addFloater(px,py-40,`+${fmt(income)} ₽`,'#4ade80');
+        for(let i=0;i<12;i++){
+          particles.push({
+            x:px+22,y:py-26,
+            vx:(Math.random()-0.5)*70,vy:-30-Math.random()*50,
+            life:0.9,maxLife:0.9,size:1.6+Math.random()*1.8,
+            color:'250,204,21',type:'spark'
+          });
+        }
+      }
+      let extra=0,parts=[];
+      if(S.upg.shop>0&&Math.random()<0.22*S.upg.shop){extra+=90+Math.random()*160;parts.push('🏪')}
+      if(S.upg.cafe>0&&Math.random()<0.18*S.upg.cafe){extra+=140+Math.random()*220;parts.push('☕')}
+      if(S.upg.wash>0&&Math.random()<0.12*S.upg.wash){extra+=300+Math.random()*350;parts.push('🚿')}
+      if(extra>0){
+        if(isVIP) extra*=2;
+        S.money+=extra;dayStats.revenue+=extra;dayStats.extra+=extra;
+        setTimeout(()=>addFloater(px,py-70,`+${fmt(extra)} ₽ ${parts.join('')}`,isVIP?'#fbbf24':'#60a5fa'),240);
+      }
+    }
+    car.state='leaving';car.targetX=W+150;
+    if(car.pump>=0){pumpSlots[car.pump]=null;car.pump=-1}
+  }
+  function removeCar(car,idx){
+    allCars.splice(idx,1);
+    updateVipHud();
+  }
+
+  function dailyExpenses(){
+    return Math.round(2500+S.upg.pumps*400+S.upg.shop*600+S.upg.cafe*800+S.upg.wash*900+S.upg.staff*1500+S.upg.tanks*200);
+  }
+  function updateMarket(){
+    FKEYS.forEach(k=>{
+      const base=BASE_MARKET[k];
+      let m=S.market[k]*(0.94+Math.random()*0.12);
+      m=clamp(m,base*0.78,base*1.25);
+      S.market[k]=Math.round(m*100)/100;
+    });
+  }
+  function endDay(){
+    const expenses=dailyExpenses();
+    S.money-=expenses;
+    const net=dayStats.revenue-expenses;
+    showReport({
+      revenue:dayStats.revenue,expenses,net,
+      served:dayStats.served,liters:dayStats.liters,
+      lost:dayStats.lost,extra:dayStats.extra,
+      vip:dayStats.vip,vipRevenue:dayStats.vipRevenue
+    });
+  }
+  function showReport(r){
+    paused=true;
+    const modal=document.getElementById('modal');
+    document.getElementById('modalTitle').textContent=`📊 Отчёт за день ${S.day}`;
+    const rows=document.getElementById('modalRows');
+    const vipRow=r.vip>0?`<div class="rep-row vip-row"><span>👑 VIP-гостей</span><span>${r.vip} · +${fmt(r.vipRevenue)} ₽</span></div>`:'';
+    rows.innerHTML=`
+      <div class="rep-row"><span>Выручка</span><span class="pos">+${fmt(r.revenue)} ₽</span></div>
+      <div class="rep-row"><span>· доп. услуги</span><span>${fmt(r.extra)} ₽</span></div>
+      ${vipRow}
+      <div class="rep-row"><span>Расходы</span><span class="neg">−${fmt(r.expenses)} ₽</span></div>
+      <div class="rep-row total"><span>Чистая прибыль</span><span class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${fmt(r.net)} ₽</span></div>
+      <div class="rep-row"><span>Обслужено</span><span>${r.served}</span></div>
+      <div class="rep-row"><span>Продано топлива</span><span>${fmt(r.liters)} л</span></div>
+      <div class="rep-row"><span>Потеряно клиентов</span><span class="${r.lost>0?'neg':''}">${r.lost}</span></div>`;
+    const btn=document.getElementById('modalBtn');
+    btn.classList.remove('danger');
+    if(S.money<0){
+      document.getElementById('modalTitle').textContent='💀 Банкротство';
+      rows.innerHTML=`
+        <div class="rep-row"><span>Баланс</span><span class="neg">${fmt(S.money)} ₽</span></div>
+        <div class="rep-row total"><span>Ваша АЗС закрыта</span><span>День ${S.day}</span></div>`;
+      btn.textContent='Начать заново 🔄';
+      btn.classList.add('danger');
+      btn.onclick=()=>{closeModal();initGame();};
+      over=true;
+      modal.classList.add('show');
+      return;
+    }
+    btn.textContent='Следующий день ▶';
+    btn.onclick=()=>{closeModal();nextDay();};
+    modal.classList.add('show');
+  }
+  function closeModal(){document.getElementById('modal').classList.remove('show')}
+  function nextDay(){
+    paused=false;S.day++;S.dayTime=0;
+    if(S.adDays>0) S.adDays--;
+    if(activeEvent) endEvent();
+    updateMarket();
+    dayStats={revenue:0,served:0,liters:0,lost:0,extra:0,vip:0,vipRevenue:0};
+    scheduleSpawn();
+    log(`🌅 День ${S.day}. Закупочные цены обновились.`,'warn');
+    saveGameState();
+  }
+
+  function update(dt){
+    S.dayTime+=dt;
+    spawnTimer-=dt;
+    if(spawnTimer<=0){spawnCustomer();scheduleSpawn();}
+    updateCars(dt);
+    updateEvents(dt);
+    if(S.dayTime>=DAY_LENGTH){S.dayTime=0;endDay();}
+    autoSaveTimer+=dt;
+    if(autoSaveTimer>5){autoSaveTimer=0;saveGameState();}
+  }
+  function tweenDisplays(dt){
+    const speed=1-Math.pow(0.00001,dt);
+    disp.money=lerp(disp.money,S.money,Math.min(1,speed*2));
+    disp.served=lerp(disp.served,dayStats.served,Math.min(1,speed*2));
+    disp.rep=lerp(disp.rep,S.reputation,Math.min(1,speed*1.5));
+    disp.demand=lerp(disp.demand,getDemand(),Math.min(1,speed*1.5));
+    disp.vip=lerp(disp.vip,dayStats.vip,Math.min(1,speed*2));
+  }
+  function flashIfChanged(el,prev,cur,threshold){
+    if(Math.abs(cur-prev)<threshold) return prev;
+    const isUp=cur>prev;
+    el.classList.remove('pos','neg','warn');
+    if(el.id==='ui-money') el.classList.add(isUp?'pos':'neg');
+    return cur;
+  }
+  const elMoney=document.getElementById('ui-money');
+  const elDay=document.getElementById('ui-day');
+  const elRep=document.getElementById('ui-rep');
+  const elServed=document.getElementById('ui-served');
+  const elDemand=document.getElementById('ui-demand');
+  const elVip=document.getElementById('ui-vip');
+  const elDayfill=document.getElementById('ui-dayfill');
+  function updateAllUI(){
+    if(!S) return;
+    elMoney.textContent=fmt(disp.money)+' ₽';
+    elMoney.classList.toggle('neg',S.money<0);
+    prevDisp.money=flashIfChanged(elMoney,prevDisp.money,S.money,50);
+    elServed.textContent=Math.round(disp.served);
+    prevDisp.served=flashIfChanged(elServed,prevDisp.served,dayStats.served,0.5);
+    elDay.textContent=S.day;
+    elRep.textContent=Math.round(disp.rep)+'%';
+    elRep.classList.toggle('pos',disp.rep>65);
+    elRep.classList.toggle('warn',disp.rep>35&&disp.rep<=65);
+    elRep.classList.toggle('neg',disp.rep<=35);
+    elDemand.textContent='×'+disp.demand.toFixed(1);
+    elVip.textContent=Math.round(disp.vip);
+    prevDisp.vip=flashIfChanged(elVip,prevDisp.vip,dayStats.vip,0.5);
+    elDayfill.style.width=clamp(S.dayTime/DAY_LENGTH*100,0,100)+'%';
+    updateFuelPanel();
+    updateUpgradePanel();
+    updateVipHud();
+  }
+  function loop(t){
+    requestAnimationFrame(loop);
+    if(!lastT) lastT=t;
+    let dt=(t-lastT)/1000;
+    lastT=t;
+    if(dt>0.1) dt=0.1;
+    sceneTime+=dt;
+    if(!paused&&!over&&gameStarted) update(dt);
+    updateParticles(dt);
+    updateFloaters(dt);
+    if(S) tweenDisplays(paused||over?0.03:dt);
+    if(gameStarted) renderScene(sceneTime);
+    uiTimer+=dt;
+    if(uiTimer>0.08||paused||over){
+      uiTimer=0;
+      if(S) updateAllUI();
+    }
+  }
+  function saveGameState(){
+    if(!currentUser||!S) return;
+    DB.saveGameState(currentUser.id,{
+      money:S.money,reputation:S.reputation,vipTotal:S.vipTotal||0,
+      day:S.day,fuel:S.fuel,price:S.price,upg:S.upg
+    });
+  }
+  window.addEventListener('beforeunload',()=>{
+    if(currentUser&&S) saveGameState();
+  });
+
+  const apanelModal=document.getElementById('apanelModal');
+  const apanelBox=document.getElementById('apanelBox');
+  const apanelTabs=document.getElementById('apanelTabs');
+  const apanelBody=document.getElementById('apanelBody');
+
+  const ADMIN_TABS=[
+    {id:'main',label:'Главное'},
+    {id:'give',label:'Выдать себе'},
+    {id:'upgrades',label:'Улучшения'},
+    {id:'events',label:'События'},
+    {id:'advanced',label:'Прочее'}
+  ];
+  const FOUNDER_TABS=[
+    {id:'main',label:'Главное'},
+    {id:'give',label:'Выдать себе'},
+    {id:'upgrades',label:'Улучшения'},
+    {id:'events',label:'События'},
+    {id:'users',label:'👥 Пользователи'},
+    {id:'admins',label:'🛡️ Админы'},
+    {id:'logs',label:'📋 Логи'},
+    {id:'advanced',label:'Прочее'}
+  ];
+  let activeTab='main';
+
+  function openPanel(kind){
+    currentPanel=kind;
+    const isFounder=kind==='founder';
+    document.getElementById('apanelIcon').textContent=isFounder?'👑':'🛡️';
+    document.getElementById('apanelTitle').textContent=isFounder?'Панель основателя':'Админ-панель';
+    document.getElementById('apanelSub').textContent=isFounder?'Полный доступ · вся статистика':'Управление своей игрой';
+    apanelBox.classList.toggle('founder-theme',isFounder);
+    panelTabs=isFounder?FOUNDER_TABS:ADMIN_TABS;
+    if(!panelTabs.find(t=>t.id===activeTab)) activeTab='main';
+    renderApanelTabs();
+    renderApanelBody();
+    apanelModal.classList.add('show');
+  }
+  function closePanel(){apanelModal.classList.remove('show');}
+  document.getElementById('apanelClose').addEventListener('click',closePanel);
+  document.getElementById('apanelLogout').addEventListener('click',()=>{if(confirm('Выйти из аккаунта?')) logoutUser();});
+  apanelModal.addEventListener('click',e=>{if(e.target===apanelModal)closePanel();});
+
+  function renderApanelTabs(){
+    apanelTabs.innerHTML='';
+    panelTabs.forEach(t=>{
+      const b=document.createElement('button');
+      b.className='atab'+(t.id===activeTab?' active':'');
+      b.textContent=t.label;
+      b.addEventListener('click',()=>{activeTab=t.id;renderApanelTabs();renderApanelBody();});
+      apanelTabs.appendChild(b);
+    });
+  }
+  function adminLog(msg){
+    DB.logAdminAction();
+    log(`🛡️ ${msg}`,'admin');
+  }
+  function renderApanelBody(){
+    apanelBody.innerHTML='';
+    const isFounder=currentPanel==='founder';
+    switch(activeTab){
+      case 'main': renderMainTab(isFounder); break;
+      case 'give': renderGiveTab(); break;
+      case 'upgrades': renderUpgradesTab(); break;
+      case 'events': renderEventsTab(); break;
+      case 'users': renderUsersTab(); break;
+      case 'admins': renderAdminsTab(); break;
+      case 'logs': renderLogsTab(); break;
+      case 'advanced': renderAdvancedTab(isFounder); break;
+    }
+  }
+  function renderMainTab(isFounder){
+    const hour=Math.floor((S.dayTime/DAY_LENGTH)*24);
+    const minute=Math.floor(((S.dayTime/DAY_LENGTH)*24-hour)*60);
+    const statGrid=document.createElement('div');
+    statGrid.className='ap-stat-grid';
+    statGrid.style.marginBottom='12px';
+    [
+      ['Баланс',fmt(S.money)+' ₽','green'],
+      ['День',S.day,'cyan'],
+      ['Репутация',Math.round(S.reputation)+'%','violet'],
+      ['VIP всего',S.vipTotal||0,'gold'],
+      ['Обслужено',dayStats.served,'cyan'],
+      ['Поток','×'+getDemand().toFixed(2),'green'],
+      ['Колонок',pumpCount(),'cyan'],
+      ['Ивентов',eventCount,'violet']
+    ].forEach(([label,val,cls])=>{
+      const b=document.createElement('div');
+      b.className='ap-stat-box '+(cls||'');
+      b.innerHTML=`<div class="ap-slabel">${label}</div><div class="ap-svalue">${val}</div>`;
+      statGrid.appendChild(b);
+    });
+    apanelBody.appendChild(statGrid);
+    const info=document.createElement('div');
+    info.className='ap-section';
+    info.innerHTML=`<h4>Текущее состояние</h4>
+      <div style="font-size:12px;line-height:1.7;color:#c3d2e8">
+        🕐 Время: <b>${pad(hour)}:${pad(minute)}</b> ·
+        👤 Пользователь: <b>${currentUser?currentUser.login:'—'}</b> ·
+        🎭 Роль: <b>${currentUser?currentUser.role:'—'}</b><br>
+        ⛽ Топливо: ${FKEYS.map(k=>`${FUELS[k].name} ${fmt(S.fuel[k])}л`).join(' · ')}
+      </div>`;
+    apanelBody.appendChild(info);
+    const saveBox=document.createElement('div');
+    saveBox.className='ap-save-status';
+    saveBox.innerHTML=`<span><span class="dot"></span>База данных: подключена</span><span class="ok">Автосохранение вкл.</span>`;
+    apanelBody.appendChild(saveBox);
+    const saveBtn=document.createElement('button');
+    saveBtn.className='ap-btn green full';
+    saveBtn.style.marginTop='12px';
+    saveBtn.textContent='💾 Сохранить сейчас';
+    saveBtn.addEventListener('click',()=>{saveGameState();toast('✅ Сохранено','good');adminLog('Ручное сохранение');});
+    apanelBody.appendChild(saveBtn);
+    if(isFounder){
+      const dangerBox=document.createElement('div');
+      dangerBox.className='ap-section';
+      dangerBox.style.marginTop='12px';
+      dangerBox.innerHTML=`<h4 style="color:#f87171">Опасная зона</h4>`;
+      const resetBtn=document.createElement('button');
+      resetBtn.className='ap-btn red full';
+      resetBtn.textContent='⚠️ Полный сброс прогресса';
+      resetBtn.addEventListener('click',()=>{
+        if(confirm('Сбросить весь прогресс? Это удалит сохранения ВСЕХ пользователей.')){
+          localStorage.removeItem(DB_KEY);
+          localStorage.removeItem(SESSION_KEY);
+          DB.load();
+          toast('💥 База данных сброшена','bad');
+          closePanel();
+          currentUser=null;updateUserChip();
+          S=null;gameStarted=false;
+          appRoot.classList.add('hidden');
+          authScreen.classList.remove('hidden');
+        }
+      });
+      dangerBox.appendChild(resetBtn);
+      const note=document.createElement('div');
+      note.className='ap-danger-note';
+      note.textContent='Удаляет все аккаунты и сохранения. Действие необратимо.';
+      dangerBox.appendChild(note);
+      apanelBody.appendChild(dangerBox);
+    }
+  }
+  function renderGiveTab(){
+    const sec=document.createElement('div');
+    sec.className='ap-section';
+    sec.innerHTML='<h4>💰 Деньги и репутация</h4>';
+    const row1=document.createElement('div');
+    row1.className='ap-row';
+    row1.innerHTML=`<label>Начислить денег</label>
+      <input type="number" id="giveMoney" value="100000" step="10000">
+      <button class="ap-btn green" id="btnGiveMoney">+</button>
+      <button class="ap-btn" id="btnSetMoney">=</button>`;
+    sec.appendChild(row1);
+    const row2=document.createElement('div');
+    row2.className='ap-row';
+    row2.innerHTML=`<label>Репутация (0–100)</label>
+      <input type="number" id="giveRep" value="100" step="5" min="0" max="100">
+      <button class="ap-btn violet" id="btnGiveRep">+</button>
+      <button class="ap-btn" id="btnSetRep">=</button>`;
+    sec.appendChild(row2);
+    const row3=document.createElement('div');
+    row3.className='ap-row';
+    row3.innerHTML=`<label>VIP-клиентов</label>
+      <input type="number" id="giveVip" value="50" step="5" min="0">
+      <button class="ap-btn gold" id="btnGiveVip">+</button>
+      <button class="ap-btn" id="btnSetVip">=</button>`;
+    sec.appendChild(row3);
+    const row4=document.createElement('div');
+    row4.className='ap-row';
+    row4.innerHTML=`<label>Топливо во все баки</label>
+      <input type="number" value="0" disabled>
+      <button class="ap-btn green" id="btnGiveFuel">+ МАКС</button>`;
+    sec.appendChild(row4);
+    apanelBody.appendChild(sec);
+    setTimeout(()=>{
+      document.getElementById('btnGiveMoney').onclick=()=>{
+        const v=parseFloat(document.getElementById('giveMoney').value)||0;
+        S.money+=v;adminLog(`Начислено +${fmt(v)} ₽`);toast(`+${fmt(v)} ₽`,'admin');saveGameState();
+      };
+      document.getElementById('btnSetMoney').onclick=()=>{
+        const v=parseFloat(document.getElementById('giveMoney').value)||0;
+        S.money=v;adminLog(`Баланс = ${fmt(v)} ₽`);toast(`= ${fmt(v)} ₽`,'admin');saveGameState();
+      };
+      document.getElementById('btnGiveRep').onclick=()=>{
+        const v=parseFloat(document.getElementById('giveRep').value)||0;
+        S.reputation=clamp(S.reputation+v,0,100);adminLog(`Репутация +${v}`);saveGameState();
+      };
+      document.getElementById('btnSetRep').onclick=()=>{
+        const v=parseFloat(document.getElementById('giveRep').value)||0;
+        S.reputation=clamp(v,0,100);adminLog(`Репутация = ${v}`);saveGameState();
+      };
+      document.getElementById('btnGiveVip').onclick=()=>{
+        const v=parseFloat(document.getElementById('giveVip').value)||0;
+        S.vipTotal=(S.vipTotal||0)+v;adminLog(`VIP +${v}`);saveGameState();
+      };
+      document.getElementById('btnSetVip').onclick=()=>{
+        const v=parseFloat(document.getElementById('giveVip').value)||0;
+        S.vipTotal=v;adminLog(`VIP = ${v}`);saveGameState();
+      };
+      document.getElementById('btnGiveFuel').onclick=()=>{
+        FKEYS.forEach(k=>{S.fuel[k]=capacity(k);});
+        adminLog('Резервуары заполнены');toast('🛢️ Баки заполнены','good');saveGameState();
+      };
+    },0);
+  }
+  function renderUpgradesTab(){
+    const sec=document.createElement('div');
+    sec.className='ap-section';
+    sec.innerHTML='<h4>🔧 Уровни улучшений</h4>';
+    UPGRADES.forEach(u=>{
+      const row=document.createElement('div');
+      row.className='ap-row';
+      row.innerHTML=`
+        <label>${u.icon} ${u.name} <span style="color:#7d90b0;font-weight:600">(макс ${u.max})</span></label>
+        <input type="number" id="upg-${u.id}" value="${S.upg[u.id]}" min="0" max="${u.max}" step="1">
+        <button class="ap-btn green" data-upg-max="${u.id}">МАКС</button>
+        <button class="ap-btn" data-upg-set="${u.id}">OK</button>`;
+      sec.appendChild(row);
+    });
+    apanelBody.appendChild(sec);
+    const quickRow=document.createElement('div');
+    quickRow.className='ap-section';
+    quickRow.innerHTML='<h4>Быстрые действия</h4>';
+    const qb=document.createElement('div');
+    qb.style.display='flex';qb.style.gap='8px';qb.style.flexWrap='wrap';
+    const btnMax=document.createElement('button');
+    btnMax.className='ap-btn gold';
+    btnMax.textContent='🎆 Всё на максимум';
+    btnMax.addEventListener('click',()=>{
+      UPGRADES.forEach(u=>S.upg[u.id]=u.max);
+      layoutPumps();adminLog('Все улучшения максимизированы');toast('🎆 Всё на максимум','admin');
+      saveGameState();renderApanelBody();
+    });
+    const btnReset=document.createElement('button');
+    btnReset.className='ap-btn red';
+    btnReset.textContent='↺ Сбросить все';
+    btnReset.addEventListener('click',()=>{
+      UPGRADES.forEach(u=>S.upg[u.id]=0);
+      layoutPumps();adminLog('Все улучшения сброшены');toast('↺ Сброшено','warn');
+      saveGameState();renderApanelBody();
+    });
+    qb.appendChild(btnMax);qb.appendChild(btnReset);
+    quickRow.appendChild(qb);
+    apanelBody.appendChild(quickRow);
+    setTimeout(()=>{
+      sec.querySelectorAll('[data-upg-max]').forEach(b=>{
+        b.onclick=()=>{
+          const id=b.dataset.upgMax;
+          const u=UPGRADES.find(x=>x.id===id);
+          S.upg[id]=u.max;
+          if(id==='pumps') layoutPumps();
+          adminLog(`${u.name} → МАКС`);saveGameState();renderApanelBody();
+        };
+      });
+      sec.querySelectorAll('[data-upg-set]').forEach(b=>{
+        b.onclick=()=>{
+          const id=b.dataset.upgSet;
+          const u=UPGRADES.find(x=>x.id===id);
+          const inp=document.getElementById('upg-'+id);
+          let v=parseInt(inp.value)||0;
+          v=clamp(v,0,u.max);
+          S.upg[id]=v;
+          if(id==='pumps') layoutPumps();
+          adminLog(`${u.name} = ${v}`);saveGameState();renderApanelBody();
+        };
+      });
+    },0);
+  }
+  function renderEventsTab(){
+    const sec=document.createElement('div');
+    sec.className='ap-section';
+    sec.innerHTML='<h4>🎲 Запустить событие</h4>';
+    const grid=document.createElement('div');
+    grid.className='ap-btn-grid';
+    EVENTS.forEach(evt=>{
+      const b=document.createElement('button');
+      b.className='ap-event-btn';
+      b.innerHTML=`<span class="ap-ico">${evt.icon}</span>
+        <span class="ap-txt">${evt.title}<small>${evt.duration}с · вес ${evt.weight}</small></span>`;
+      b.addEventListener('click',()=>{
+        if(activeEvent) endEvent();
+        startEvent(evt);
+        DB.logEventLaunch();
+        adminLog(`Событие: ${evt.title}`);
+        toast(`🎲 ${evt.title}`,'event');
+      });
+      grid.appendChild(b);
+    });
+    sec.appendChild(grid);
+    apanelBody.appendChild(sec);
+    const ctrl=document.createElement('div');
+    ctrl.className='ap-section';
+    ctrl.innerHTML='<h4>Управление</h4>';
+    const stopBtn=document.createElement('button');
+    stopBtn.className='ap-btn red full';
+    stopBtn.textContent='⏹ Остановить текущее событие';
+    stopBtn.disabled=!activeEvent;
+    stopBtn.addEventListener('click',()=>{if(activeEvent){endEvent();adminLog('Остановлено событие');}});
+    ctrl.appendChild(stopBtn);
+    const randomBtn=document.createElement('button');
+    randomBtn.className='ap-btn violet full';
+    randomBtn.style.marginTop='8px';
+    randomBtn.textContent='🎲 Случайное событие';
+    randomBtn.addEventListener('click',()=>{
+      if(activeEvent) endEvent();
+      startEvent();
+      DB.logEventLaunch();
+      adminLog('Случайное событие');
+    });
+    ctrl.appendChild(randomBtn);
+    apanelBody.appendChild(ctrl);
+  }
+  function renderUsersTab(){
+    const sec=document.createElement('div');
+    sec.className='ap-section';
+    sec.innerHTML='<h4>👥 Все пользователи</h4>';
+    const table=document.createElement('table');
+    table.className='ausers-table';
+    table.innerHTML=`
+      <thead><tr>
+        <th>#</th><th>Логин</th><th>Роль</th><th>Баланс</th>
+        <th>Rep</th><th>VIP</th><th>День</th><th>Вход</th>
+      </tr></thead>`;
+    const tbody=document.createElement('tbody');
+    const sorted=[...DB.data.users].sort((a,b)=>(b.money||0)-(a.money||0));
+    sorted.forEach((u,i)=>{
+      const isYou=currentUser&&u.id===currentUser.id;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td>${i+1}</td>
+        <td><b>${u.login}</b>${isYou?' <span class="arole-badge you">вы</span>':''}</td>
+        <td><span class="arole-badge ${u.role}">${u.role}</span></td>
+        <td>${fmt(u.money||0)} ₽</td>
+        <td>${Math.round(u.rep||0)}%</td>
+        <td style="color:#fbbf24">${u.vip||0}</td>
+        <td>${u.day||1}</td>
+        <td style="color:#7d90b0;font-size:11px">${timeAgo(u.lastLogin||u.created)}</td>`;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    sec.appendChild(table);
+    apanelBody.appendChild(sec);
+  }
+  function renderAdminsTab(){
+    const sec=document.createElement('div');
+    sec.className='ap-section';
+    sec.innerHTML='<h4>🛡️ Администраторы</h4>';
+    const admins=DB.data.users.filter(u=>u.role==='admin'||u.role==='founder');
+    admins.forEach(a=>{
+      const row=document.createElement('div');
+      row.className='ap-row';
+      row.innerHTML=`<label>${a.role==='founder'?'👑':'🛡️'} <b>${a.login}</b> · ${a.role}</label>
+        <span style="font-size:11px;color:#7d90b0">${timeAgo(a.lastLogin||a.created)}</span>`;
+      sec.appendChild(row);
+    });
+    apanelBody.appendChild(sec);
+    const stats=document.createElement('div');
+    stats.className='ap-section';
+    stats.innerHTML='<h4>📊 Статистика</h4>';
+    const sg=document.createElement('div');
+    sg.className='ap-stat-grid';
+    const total=DB.data.users.length;
+    const usersCount=DB.data.users.filter(u=>u.role==='user').length;
+    const adminsCount=DB.data.users.filter(u=>u.role==='admin').length;
+    const totalMoney=DB.data.users.reduce((s,u)=>s+(u.money||0),0);
+    [
+      ['Всего',total,'cyan'],
+      ['Юзеров',usersCount,'green'],
+      ['Админов',adminsCount,'violet'],
+      ['Основателей',1,'gold'],
+      ['Денег',fmt(totalMoney)+' ₽','green'],
+      ['Входов',DB.data.stats.logins||0,'cyan'],
+      ['Регистраций',DB.data.stats.registrations||0,'violet'],
+      ['Ивентов',DB.data.stats.eventsLaunched||0,'gold']
+    ].forEach(([l,v,c])=>{
+      const b=document.createElement('div');
+      b.className='ap-stat-box '+c;
+      b.innerHTML=`<div class="ap-slabel">${l}</div><div class="ap-svalue">${v}</div>`;
+      sg.appendChild(b);
+    });
+    stats.appendChild(sg);
+    apanelBody.appendChild(stats);
+    const manage=document.createElement('div');
+    manage.className='ap-section';
+    manage.innerHTML='<h4>Назначение ролей</h4>';
+    const row=document.createElement('div');
+    row.className='ap-row';
+    const sel=document.createElement('select');
+    sel.style.width='160px';
+    DB.data.users.forEach(u=>{
+      const o=document.createElement('option');
+      o.value=u.id;o.textContent=u.login+' ('+u.role+')';sel.appendChild(o);
+    });
+    const roleSel=document.createElement('select');
+    roleSel.style.width='100px';
+    ['user','admin','founder'].forEach(r=>{
+      const o=document.createElement('option');o.value=r;o.textContent=r;roleSel.appendChild(o);
+    });
+    const btn=document.createElement('button');
+    btn.className='ap-btn';
+    btn.textContent='Назначить';
+    btn.addEventListener('click',()=>{
+      const uid=parseInt(sel.value);
+      const newRole=roleSel.value;
+      const u=DB.findById(uid);
+      if(!u) return;
+      if(u.role==='founder'&&newRole!=='founder'&&!confirm('Снять роль основателя?')) return;
+      u.role=newRole;
+      DB.save();
+      adminLog(`Роль ${u.login} → ${newRole}`);
+      toast(`Роль ${u.login} = ${newRole}`,'admin');
+      renderApanelBody();
+    });
+    row.appendChild(sel);row.appendChild(roleSel);row.appendChild(btn);
+    manage.appendChild(row);
+    apanelBody.appendChild(manage);
+  }
+  function renderLogsTab(){
+    const sec=document.createElement('div');
+    sec.className='ap-section';
+    sec.innerHTML='<h4>📋 Последние события</h4>';
+    const list=document.createElement('div');
+    list.style.cssText='max-height:300px;overflow-y:auto;font-size:11.5px;line-height:1.6;background:rgba(0,0,0,.28);border-radius:10px;padding:10px;color:#c3d2e8';
+    if(logEl.children.length===0) list.textContent='Пока нет записей.';
+    else {
+      [...logEl.children].slice(0,30).forEach(el=>{
+        const row=document.createElement('div');
+        row.style.cssText='padding:3px 0;border-bottom:1px dashed rgba(120,155,215,.08)';
+        row.innerHTML=el.innerHTML;
+        list.appendChild(row);
+      });
+    }
+    sec.appendChild(list);
+    apanelBody.appendChild(sec);
+    const expBtn=document.createElement('button');
+    expBtn.className='ap-btn full';
+    expBtn.textContent='📥 Экспортировать базу (JSON)';
+    expBtn.addEventListener('click',()=>{
+      const blob=new Blob([JSON.stringify(DB.data,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download='azs_db_'+Date.now()+'.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('📥 Экспорт готов','good');
+    });
+    apanelBody.appendChild(expBtn);
+  }
+  function renderAdvancedTab(isFounder){
+    const sec=document.createElement('div');
+    sec.className='ap-section';
+    sec.innerHTML='<h4>🛠️ Отладка</h4>';
+    const grid=document.createElement('div');
+    grid.style.display='flex';grid.style.flexWrap='wrap';grid.style.gap='8px';
+    [
+      ['🚀 Пропустить день',()=>{S.dayTime=DAY_LENGTH-0.1;adminLog('Пропуск дня');},'violet'],
+      ['🔥 Очистить очередь',()=>{
+        allCars.length=0;queue.length=0;pumpSlots.fill(null);
+        adminLog('Очередь очищена');
+      },'red'],
+      ['💰 +1 000 000 ₽',()=>{S.money+=1000000;adminLog('+1 млн ₽');toast('+1 000 000 ₽','admin');saveGameState();},'green'],
+      ['⭐ Репутация = 100',()=>{S.reputation=100;adminLog('Репутация = 100');saveGameState();},'violet'],
+      ['👑 +100 VIP',()=>{S.vipTotal=(S.vipTotal||0)+100;adminLog('+100 VIP');saveGameState();},'gold'],
+      ['🎲 Все апгрейды MAX',()=>{
+        UPGRADES.forEach(u=>S.upg[u.id]=u.max);
+        layoutPumps();adminLog('Апгрейды максимальны');
+        saveGameState();
+      },'green']
+    ].forEach(([label,fn,cls])=>{
+      const b=document.createElement('button');
+      b.className='ap-btn '+(cls||'');
+      b.textContent=label;
+      b.addEventListener('click',()=>{fn();});
+      grid.appendChild(b);
+    });
+    sec.appendChild(grid);
+    apanelBody.appendChild(sec);
+    if(isFounder){
+      const reset=document.createElement('div');
+      reset.className='ap-section';
+      reset.innerHTML='<h4 style="color:#f87171">Сброс</h4>';
+      const btn=document.createElement('button');
+      btn.className='ap-btn red full';
+      btn.textContent='🔄 Сбросить МОЙ прогресс';
+      btn.addEventListener('click',()=>{
+        if(!confirm('Сбросить ваш игровой прогресс?')) return;
+        if(currentUser){
+          currentUser.money=150000;currentUser.rep=50;currentUser.vip=0;currentUser.day=1;
+          currentUser.fuel={ai95:2000,ai98:800,dt:1200};
+          currentUser.price={ai95:58.2,ai98:70.6,dt:63.8};
+          currentUser.upg={pumps:1,shop:0,cafe:0,wash:0,staff:0,tanks:0};
+          DB.save();
+        }
+        initGame();
+        toast('🔄 Прогресс сброшен','warn');
+      });
+      reset.appendChild(btn);
+      apanelBody.appendChild(reset);
+    }
+  }
+
+  const roleControls=document.getElementById('roleControls');
+  const unhideRoleBtn=document.getElementById('unhideRoleBtn');
+  const roleHiddenKey='azs_sim_role_hidden';
+
+  function hasPanelAccess(target){
+    if(!currentUser) return false;
+    if(target==='founder') return currentUser.role==='founder';
+    if(target==='admin') return currentUser.role==='admin'||currentUser.role==='founder';
+    return false;
+  }
+  function tryOpenPanel(target){
+    if(hasPanelAccess(target)){openPanel(target);return true;}
+    return false;
+  }
+  document.getElementById('adminOpenBtn').addEventListener('click',()=>{
+    if(!tryOpenPanel('admin')) toast('⛔ Нужен аккаунт админа','bad');
+  });
+  document.getElementById('founderOpenBtn').addEventListener('click',()=>{
+    if(!tryOpenPanel('founder')) toast('⛔ Нужен аккаунт основателя','bad');
+  });
+  document.getElementById('hideRoleBtn').addEventListener('click',()=>{
+    roleControls.classList.add('hidden');
+    unhideRoleBtn.classList.add('on');
+    try{localStorage.setItem(roleHiddenKey,'1');}catch(e){}
+  });
+  unhideRoleBtn.addEventListener('click',()=>{
+    roleControls.classList.remove('hidden');
+    unhideRoleBtn.classList.remove('on');
+    try{localStorage.removeItem(roleHiddenKey);}catch(e){}
+  });
+  try{
+    if(localStorage.getItem(roleHiddenKey)==='1'){
+      roleControls.classList.add('hidden');
+      unhideRoleBtn.classList.add('on');
+    }
+  }catch(e){}
+
+  function logoutUser(){
+    if(!currentUser) return;
+    saveGameState();
+    DB.clearSession();
+    const wasLogin=currentUser.login;
+    currentUser=null;
+    updateUserChip();
+    closePanel();
+    S=null;gameStarted=false;
+    appRoot.classList.add('hidden');
+    authScreen.classList.remove('hidden');
+    document.getElementById('logLogin').value='';
+    document.getElementById('logPass').value='';
+    document.getElementById('logError').textContent='';
+    toast(`🚪 ${wasLogin}, вы вышли`,'warn');
+  }
+  document.getElementById('menuLogoutBtn').addEventListener('click',()=>{if(currentUser && confirm('Вы действительно хотите выйти из аккаунта? Ваш прогресс будет сохранён.')) logoutUser();});
+  document.getElementById('userChip').style.cursor='default';
+
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab-body').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  let resizeTimer=null;
+  function onResize(){
+    clearTimeout(resizeTimer);
+    resizeTimer=setTimeout(()=>{
+      resizeCanvas();
+      if(S){
+        allCars.forEach(c=>{
+          if(c.pump>=0) c.targetX=pumpXCanvas[c.pump];
+          if(c.state==='leaving') c.targetX=W+150;
+        });
+      }
+    },80);
+  }
+  window.addEventListener('resize',onResize);
+  window.addEventListener('orientationchange',onResize);
+
+  const sceneEl=document.getElementById('sceneEl');
+  if(window.ResizeObserver){
+    const ro=new ResizeObserver(()=>{
+      if(gameStarted){
+        clearTimeout(resizeTimer);
+        resizeTimer=setTimeout(resizeCanvas,60);
+      }
+    });
+    ro.observe(sceneEl);
+  }
+
+  DB.load();
+  resizeCanvas();
+  requestAnimationFrame(loop);
+
+  const session=DB.session();
+  if(session){currentUser=session;startGame();}
+</script>
+</body>
+</html>

@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Симулятор Президента</title>
+<style>
+:root{
+  --bg:#0b0f16;--bg2:#121823;--panel:#161d2b;--panel2:#1d2636;--panel3:#232e42;
+  --border:#2b3648;--border2:#3a4760;--text:#e8eef7;--muted:#8b9ab3;
+  --accent:#4b8ef7;--accent2:#2f6fd0;--green:#2ecc71;--red:#ef4a4a;
+  --yellow:#f0b429;--purple:#a970ff;--cyan:#31c9d6;--orange:#ff8c42;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:radial-gradient(1200px 800px at 20% -10%, #16203200, #0b0f16 60%), var(--bg);
+  color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,'Roboto',Arial,sans-serif;
+  font-size:14px;overflow-x:hidden;padding-bottom:78px;
+}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+button{font-family:inherit;cursor:pointer;border:none;color:inherit;}
+#topbar{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#121a28,#0e1420);
+  border-bottom:1px solid var(--border);padding:6px 8px;box-shadow:0 4px 18px rgba(0,0,0,.5);}
+.stat-row{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;}
+.stat{display:flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--border);
+  border-radius:8px;padding:4px 9px;font-size:12.5px;font-weight:600;white-space:nowrap;}
+.stat .ic{font-size:14px;}
+.stat .val{color:var(--text);}
+.stat .lbl{color:var(--muted);font-weight:500;font-size:11px;}
+.stat.good .val{color:var(--green);}
+.stat.bad .val{color:var(--red);}
+.stat.warn .val{color:var(--yellow);}
+.stat.turn{background:var(--panel2);border-color:var(--border2);}
+#layout{display:grid;grid-template-columns:1fr 320px;gap:10px;padding:10px;max-width:1400px;margin:0 auto;align-items:start;}
+@media(max-width:900px){#layout{grid-template-columns:1fr;}}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;}
+.panel-title{font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);
+  margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+#grid{display:grid;gap:6px;grid-template-columns:repeat(5,1fr);}
+.cell{position:relative;aspect-ratio:1/1;border-radius:10px;border:1px solid var(--border);
+  background:var(--panel2);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:.12s;overflow:hidden;user-select:none;}
+.cell:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 4px 14px rgba(75,142,247,.25);}
+.cell:active{transform:scale(.96);}
+.cell.empty{background:#1a2231;}
+.cell.forest{background:#152a1c;}
+.cell.water{background:#12263a;cursor:not-allowed;}
+.cell.water:hover{transform:none;border-color:var(--border);box-shadow:none;}
+.cell.has-building{background:linear-gradient(160deg,#243046,#1a2231);border-color:var(--border2);}
+.cell-icon{font-size:clamp(18px,5vw,26px);line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));}
+.cell-name{font-size:8.5px;color:var(--muted);margin-top:2px;text-align:center;line-height:1.05;
+  padding:0 2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+@media(max-width:900px){.cell-name{font-size:7.5px;}}
+.cell-mil{border-color:#5a2b2b !important;background:linear-gradient(160deg,#2e1c22,#1a2231) !important;}
+.bgroup{margin-bottom:12px;}
+.bgroup-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;
+  margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.bbtn{width:100%;display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:9px;padding:8px 10px;margin-bottom:6px;text-align:left;transition:.12s;}
+.bbtn:hover:not(:disabled){background:var(--panel3);border-color:var(--accent);transform:translateX(2px);}
+.bbtn:disabled{opacity:.42;cursor:not-allowed;}
+.bbtn .bic{font-size:19px;flex-shrink:0;}
+.bbtn .binfo{flex:1;min-width:0;}
+.bbtn .bname{font-size:12.5px;font-weight:700;}
+.bbtn .bdesc{font-size:10.5px;color:var(--muted);line-height:1.25;margin-top:1px;}
+.bbtn .bprice{font-size:11px;font-weight:700;color:var(--yellow);white-space:nowrap;}
+.bbtn .bcount{background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:9px;padding:1px 6px;flex-shrink:0;}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:60;background:linear-gradient(0deg,#0e1420,#121a28);
+  border-top:1px solid var(--border);padding:8px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap;
+  box-shadow:0 -4px 18px rgba(0,0,0,.55);}
+.abtn{background:var(--panel2);border:1px solid var(--border2);border-radius:10px;padding:9px 15px;
+  font-size:13px;font-weight:700;transition:.12s;display:flex;align-items:center;gap:6px;}
+.abtn:hover{background:var(--panel3);border-color:var(--accent);}
+.abtn:active{transform:scale(.96);}
+.abtn.primary{background:linear-gradient(180deg,#3b82f6,#2563eb);border-color:#60a5fa;color:#fff;}
+.abtn.primary:hover{background:linear-gradient(180deg,#4b8ef7,#2f6fd0);}
+.abtn.danger{border-color:#7a2b2b;}
+.abtn.danger:hover{background:#2e1c22;border-color:var(--red);}
+.abtn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+#modalLayer{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:14px;}
+#modalLayer.active{display:flex;}
+.modal-backdrop{position:absolute;inset:0;background:rgba(5,8,13,.82);backdrop-filter:blur(3px);animation:fadeIn .18s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{position:relative;background:linear-gradient(180deg,#1a2232,#141b28);border:1px solid var(--border2);
+  border-radius:16px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.75);animation:popIn .2s cubic-bezier(.2,1.3,.5,1);}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h2{font-size:19px;margin-bottom:12px;display:flex;align-items:center;gap:9px;}
+.modal h3{font-size:14px;margin:12px 0 7px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.modal-body{font-size:13.5px;line-height:1.6;color:#cfd9e8;}
+.modal-body p{margin-bottom:8px;}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+.modal-actions .abtn{flex:1;justify-content:center;min-width:120px;}
+.opt{width:100%;text-align:left;background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+  padding:11px 13px;margin-bottom:8px;transition:.12s;font-size:13px;line-height:1.45;}
+.opt:hover{background:var(--panel3);border-color:var(--accent);transform:translateX(3px);}
+.opt .opt-t{font-weight:700;display:block;margin-bottom:3px;}
+.opt .opt-d{font-size:11.5px;color:var(--muted);}
+.country{display:flex;align-items:center;gap:11px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:11px;padding:11px;margin-bottom:9px;}
+.country.defeated{opacity:.45;border-color:#3a5a3a;}
+.country .flag{font-size:29px;flex-shrink:0;}
+.country .cinfo{flex:1;min-width:0;}
+.country .cname{font-size:14px;font-weight:700;}
+.country .cmeta{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;}
+.country .cact{flex-shrink:0;}
+.chance-bar{height:6px;border-radius:3px;background:#0d1420;margin-top:5px;overflow:hidden;border:1px solid var(--border);}
+.chance-fill{height:100%;transition:width .3s;}
+.progress{height:16px;background:#0d1420;border-radius:8px;overflow:hidden;border:1px solid var(--border2);margin:14px 0;}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#ef4a4a,#f0b429,#2ecc71);
+  transition:width .25s linear;border-radius:8px;}
+.war-msg{text-align:center;font-size:13px;color:var(--muted);min-height:20px;font-style:italic;}
+#log{max-height:150px;overflow-y:auto;font-size:11.5px;line-height:1.55;}
+.log-item{padding:3px 0;border-bottom:1px solid #1e2735;color:var(--muted);}
+.log-item:last-child{border-bottom:none;}
+.log-item .lt{color:var(--accent);font-weight:700;}
+.log-item.good{color:#8fe0ae;}
+.log-item.bad{color:#f39a9a;}
+.log-item.warn{color:#f5d486;}
+.tag{display:inline-block;background:var(--panel3);border:1px solid var(--border2);border-radius:6px;
+  padding:2px 7px;font-size:11px;margin:2px 3px 2px 0;}
+.tag.on{background:#1f3d29;border-color:#2ecc71;color:#8fe0ae;}
+.tag.off{opacity:.5;}
+.kv{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1e2735;font-size:12.5px;}
+.kv:last-child{border-bottom:none;}
+.kv span:last-child{font-weight:700;}
+.notice{background:#1d2a3d;border:1px solid #2f4a6b;border-radius:9px;padding:9px 11px;
+  font-size:12px;color:#9fc3ee;margin-bottom:11px;line-height:1.5;}
+.notice.warn{background:#2e2411;border-color:#6b5220;color:#f0c96a;}
+.notice.bad{background:#2e1616;border-color:#6b2020;color:#f39a9a;}
+.notice.good{background:#132b1d;border-color:#1f5a35;color:#8fe0ae;}
+.slider{width:100%;height:6px;-webkit-appearance:none;appearance:none;background:#0d1420;border-radius:3px;
+  outline:none;margin:12px 0;border:1px solid var(--border);}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:2px solid #fff2;}
+.slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff2;}
+.center{text-align:center;}
+.big-num{font-size:26px;font-weight:800;letter-spacing:-.5px;}
+.muted{color:var(--muted);}
+.small{font-size:11px;}
+hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
+.scroll-y{max-height:420px;overflow-y:auto;padding-right:4px;}
+</style>
+</head>
+<body>
+
+<div id="topbar"><div class="stat-row" id="statRow"></div></div>
+
+<div id="layout">
+  <div>
+    <div class="panel" style="margin-bottom:10px;">
+      <div class="panel-title"><span>🗺️ Территория</span><span id="territoryInfo" class="small muted"></span></div>
+      <div id="grid"></div>
+    </div>
+    <div class="panel"><div class="panel-title"><span>📜 Хроника</span></div><div id="log"></div></div>
+  </div>
+  <div class="panel"><div class="panel-title"><span>🏗️ Строительство</span></div><div id="buildPanel"></div></div>
+</div>
+
+<div id="bottombar">
+  <button class="abtn primary" onclick="nextTurn()">▶ Следующий месяц</button>
+  <button class="abtn danger" onclick="openWarMenu()">⚔️ Война</button>
+  <button class="abtn" onclick="openTaxMenu()">💰 Налоги</button>
+  <button class="abtn" onclick="openArmyMenu()">🎖️ Армия</button>
+  <button class="abtn" onclick="openTechMenu()">🔬 Науки</button>
+  <button class="abtn" onclick="openDomesticMenu()">🏛️ Внутри</button>
+  <button class="abtn" onclick="openStatsMenu()">📊 Статистика</button>
+</div>
+
+<div id="modalLayer"></div>
+
+<script>
+"use strict";
+
+const GAME_VERSION = 5;
+const SAVE_KEY = 'president_sim_save_v' + GAME_VERSION;
+
+/* ============ БАЛАНС ============ */
+const BAL = {
+  FARM_FOOD:      30,    // еда с фермы за ход
+  HOUSE_POP:      20,    // прирост с дома за ход
+  HOSPITAL_POP:   15,    // доп. прирост с больницы
+  FOOD_PER_POP:   0.08,  // потребление еды на человека
+  TAX_MULT:       3,     // множитель налога
+  CAP_HOUSE:      500,   // вместимость 1 дома
+  CAP_HOSPITAL:   200,   // вместимость 1 больницы
+  COMPOUND_MAX:   500,   // макс. компаунд-прирост от населения
+  FOOD_CAP_MULT:  2,     // крышка склада еды = capacity * mult
+  FACTORY_INCOME: 3000,
+  START_MONEY:    1000000,
+};
+
+const TERRAIN = {
+  empty:  { name:'Пустошь', icon:'🟫', buildable:true  },
+  forest: { name:'Лес',     icon:'🌲', buildable:true  },
+  water:  { name:'Вода',    icon:'🌊', buildable:false },
+};
+
+const BUILDINGS = {
+  house:    { name:'Дом',     icon:'🏠', cat:'civil', cost:5000,   desc:`+${BAL.HOUSE_POP} жителей/ход · вместимость +${BAL.CAP_HOUSE}` },
+  farm:     { name:'Ферма',   icon:'🌾', cat:'civil', cost:8000,   desc:`+${BAL.FARM_FOOD} еды/ход (× технологии и школы)` },
+  sawmill:  { name:'Лесопилка', icon:'🪵', cat:'civil', cost:10000,  desc:'+5 материалов/ход (в лесу — вдвое)' },
+  power:    { name:'Электростанция', icon:'⚡', cat:'civil', cost:25000, desc:'+20 энергии/ход' },
+  factory:  { name:'Завод',   icon:'🏭', cat:'civil', cost:40000,  desc:`+${BAL.FACTORY_INCOME} ₽/ход · тратит 5 мат. + 10 эн.` },
+  hospital: { name:'Больница',icon:'🏥', cat:'civil', cost:30000,  desc:`+${BAL.HOSPITAL_POP} прироста · вместимость +${BAL.CAP_HOSPITAL}` },
+  school:   { name:'Школа',   icon:'🎓', cat:'civil', cost:20000,  desc:'+2 науки/ход · +15% производства' },
+  barracks: { name:'Казармы', icon:'🎖️', cat:'mil',   cost:35000,  desc:'+10 солдат/ход' },
+  tankFactory: { name:'Танковый завод', icon:'🛡️', cat:'mil', cost:60000,  desc:'+1 танк/ход · 10 мат. + 15 эн.' },
+  airFactory:  { name:'Авиазавод',      icon:'✈️', cat:'mil', cost:80000,  desc:'+1 самолёт/ход · 15 мат. + 20 эн.' },
+  missileComplex:{ name:'Ракетный комплекс', icon:'🚀', cat:'mil', cost:120000, desc:'+1 ракета/ход · 20 мат. + 30 эн. + 10 000 ₽' },
+};
+
+const COUNTRIES = [
+  { id:'iran',    name:'Иран',    flag:'🇮🇷', mp:2500,  cost:6000000,  reward:250000, desc:'Слабый сосед. Хорош для разгона.' },
+  { id:'germany', name:'Германия',flag:'🇩🇪', mp:3000,  cost:8000000,  reward:320000, desc:'Развитая экономика, небольшая армия.' },
+  { id:'france',  name:'Франция', flag:'🇫🇷', mp:4000,  cost:9000000,  reward:380000, desc:'Ядерная держава средней силы.' },
+  { id:'russia',  name:'Россия',  flag:'🇷🇺', mp:5000,  cost:10000000, reward:450000, desc:'Огромная армия. Нужна серьёзная подготовка.' },
+  { id:'china',   name:'Китай',   flag:'🇨🇳', mp:8000,  cost:15000000, reward:620000, desc:'Многомиллионная армия.' },
+  { id:'usa',     name:'США',     flag:'🇺🇸', mp:12000, cost:25000000, reward:900000, desc:'Сильнейшая армия мира.' },
+];
+
+const TECHS = {
+  agriculture1:{ name:'Механизация',        cost:20, req:[],                desc:'+100% производства еды' },
+  agriculture2:{ name:'Удобрения',          cost:45, req:['agriculture1'],  desc:'+100% производства еды' },
+  agriculture3:{ name:'ГМО-культуры',       cost:90, req:['agriculture2'],  desc:'+100% производства еды' },
+  industry1:{    name:'Автоматизация',      cost:30, req:[],             desc:'+60% производства материалов' },
+  industry2:{    name:'Роботизация',        cost:70, req:['industry1'],   desc:'+60% производства материалов' },
+  energy1:{      name:'Атомная энергетика', cost:40, req:[],           desc:'+60% производства энергии' },
+  energy2:{      name:'Термоядерный синтез',cost:95, req:['energy1'],   desc:'+60% производства энергии' },
+  medicine1:{    name:'Вакцинация',         cost:30, req:[],             desc:'+60% прироста населения' },
+  medicine2:{    name:'Генная медицина',    cost:75, req:['medicine1'],   desc:'+60% прироста населения' },
+  military1:{    name:'Современная армия',  cost:35, req:[],             desc:'+8% к шансу победы' },
+  military2:{    name:'Кибервойска',        cost:80, req:['military1'],   desc:'+8% к шансу победы' },
+  economy1:{     name:'Налоговая реформа',  cost:35, req:[],             desc:'+30% налоговых поступлений' },
+  economy2:{     name:'Цифровая экономика', cost:80, req:['economy1'],    desc:'+30% налоговых поступлений' },
+  media1:{       name:'Государственные СМИ',cost:25, req:[],             desc:'+1.5 доверия/ход' },
+  drainage:{     name:'Осушение земель',    cost:55, req:[],             desc:'Можно строить на воде' },
+  education1:{   name:'Всеобщее образование', cost:40, req:[],          desc:'+1 наука/ход со школ' },
+};
+
+const EVENTS = [
+  { id:'strike', title:'✊ Забастовка на заводах',
+    text:'Рабочие требуют повышения зарплат. Заводы остановились.',
+    choices:[
+      { t:'Повысить зарплаты (−250 000 ₽)', d:'+6 доверия.', fn:g=>{ g.money-=250000; g.trust+=6; } },
+      { t:'Разогнать забастовку', d:'−12 доверия, +4 коррупции, +5 репутации.', fn:g=>{ g.trust-=12; g.corruption=Math.min(60,g.corruption+4); g.reputation+=5; } },
+      { t:'Вести переговоры (−100 000 ₽)', d:'+2 доверия.', fn:g=>{ g.trust+=2; g.money-=100000; } },
+    ] },
+  { id:'epidemic', title:'🦠 Вспышка эпидемии',
+    text:'Опасный вирус распространяется в крупных городах.',
+    choices:[
+      { t:'Жёсткий карантин (−400 000 ₽)', d:'−3 доверия, эпидемия подавлена.', fn:g=>{ g.money-=400000; g.trust-=3; } },
+      { t:'Экстренные инвестиции в медицину (−600 000 ₽)', d:'+8 доверия.', fn:g=>{ g.money-=600000; g.trust+=8; } },
+      { t:'Ничего не делать', d:'−15% населения, −12 доверия.', fn:g=>{ g.population=Math.floor(g.population*0.85); g.trust-=12; } },
+    ] },
+  { id:'invest', title:'💼 Иностранные инвестиции',
+    text:'Международный консорциум предлагает вложить средства — но требует уступок.',
+    choices:[
+      { t:'Принять инвестиции', d:'+1 500 000 ₽, −6 репутации, +3 коррупции.', fn:g=>{ g.money+=1500000; g.reputation-=6; g.corruption=Math.min(60,g.corruption+3); } },
+      { t:'Отказаться', d:'+5 доверия, +4 репутации.', fn:g=>{ g.trust+=5; g.reputation+=4; } },
+      { t:'Принять с антикоррупционными мерами (−150 000 ₽)', d:'+750 000 ₽, −2 коррупции.', fn:g=>{ g.money+=750000; g.corruption=Math.max(0,g.corruption-2); } },
+    ] },
+  { id:'protest', title:'📢 Массовые протесты',
+    text:'Тысячи недовольных вышли на площади. Оппозиция требует перемен.',
+    choices:[
+      { t:'Пойти на диалог (−200 000 ₽)', d:'+7 доверия.', fn:g=>{ g.trust+=7; g.money-=200000; } },
+      { t:'Разогнать протесты', d:'−15 доверия, −8 репутации, +6 коррупции.', fn:g=>{ g.trust-=15; g.reputation-=8; g.corruption=Math.min(60,g.corruption+6); } },
+      { t:'Пообещать реформы', d:'+3 сейчас, −4 потом.', fn:g=>{ g.trust+=3; g.pendingTrust-=4; } },
+    ] },
+  { id:'armsrace', title:'🚀 Гонка вооружений',
+    text:'Соседи наращивают мощь. Генералы требуют ответных мер.',
+    choices:[
+      { t:'Ускорить военную программу (−800 000 ₽)', d:'+15 солдат, +2 танка.', fn:g=>{ g.money-=800000; g.army.soldiers+=15; g.army.tanks+=2; } },
+      { t:'Выступить с мирной инициативой', d:'+8 репутации, −3 доверия.', fn:g=>{ g.reputation+=8; g.trust-=3; } },
+      { t:'Игнорировать', d:'Ничего.', fn:g=>{} },
+    ] },
+  { id:'corruption', title:'💸 Коррупционный скандал',
+    text:'Журналисты раскрыли схему хищения бюджетных средств.',
+    choices:[
+      { t:'Наказать виновных', d:'−8 коррупции, +5 доверия, −3 репутации.', fn:g=>{ g.corruption=Math.max(0,g.corruption-8); g.trust+=5; g.reputation-=3; } },
+      { t:'Замести дело', d:'+6 коррупции, −8 доверия.', fn:g=>{ g.corruption=Math.min(60,g.corruption+6); g.trust-=8; } },
+      { t:'Свалить на предшественников', d:'+2 доверия, +3 коррупции.', fn:g=>{ g.trust+=2; g.corruption=Math.min(60,g.corruption+3); } },
+    ] },
+  { id:'disaster', title:'🌪️ Природная катастрофа',
+    text:'Стихийное бедствие разрушило инфраструктуру.',
+    choices:[
+      { t:'Масштабная помощь (−500 000 ₽)', d:'+10 доверия, +3 репутации.', fn:g=>{ g.money-=500000; g.trust+=10; g.reputation+=3; } },
+      { t:'Минимальная помощь (−150 000 ₽)', d:'−5 доверия.', fn:g=>{ g.money-=150000; g.trust-=5; } },
+      { t:'Обратиться за международной помощью', d:'+400 000 ₽, −4 репутации.', fn:g=>{ g.money+=400000; g.reputation-=4; } },
+    ] },
+  { id:'breakthrough', title:'🔬 Научный прорыв',
+    text:'Учёные совершили открытие, способное изменить экономику.',
+    choices:[
+      { t:'Внедрить в промышленность', d:'+6 наук, +300 000 ₽.', fn:g=>{ g.techPoints+=6; g.money+=300000; } },
+      { t:'Продать патенты за рубеж', d:'+1 200 000 ₽, −3 репутации.', fn:g=>{ g.money+=1200000; g.reputation-=3; } },
+      { t:'Засекретить для армии', d:'+8 наук, +2 танка, +1 самолёт.', fn:g=>{ g.techPoints+=8; g.army.tanks+=2; g.army.planes+=1; } },
+    ] },
+  { id:'migration', title:'🚶 Миграционный кризис',
+    text:'Тысячи беженцев прибыли к границам.',
+    choices:[
+      { t:'Принять и интегрировать (−300 000 ₽)', d:'+800 населения, +5 репутации, −3 доверия.', fn:g=>{ g.money-=300000; g.population+=800; g.reputation+=5; g.trust-=3; } },
+      { t:'Закрыть границы', d:'+4 доверия, −8 репутации.', fn:g=>{ g.trust+=4; g.reputation-=8; } },
+      { t:'Разместить в лагерях (−100 000 ₽)', d:'−2 доверия, −2 репутации.', fn:g=>{ g.money-=100000; g.trust-=2; g.reputation-=2; } },
+    ] },
+  { id:'terror', title:'💣 Террористическая угроза',
+    text:'Спецслужбы предупреждают о готовящихся терактах.',
+    choices:[
+      { t:'Усилить охрану (−350 000 ₽)', d:'−4 доверия, +5 репутации.', fn:g=>{ g.money-=350000; g.trust-=4; g.reputation+=5; } },
+      { t:'Провести спецоперацию', d:'+6 доверия, −200 000 ₽, −3 солдата.', fn:g=>{ g.trust+=6; g.money-=200000; g.army.soldiers=Math.max(0,g.army.soldiers-3); } },
+      { t:'Проигнорировать', d:'−12 доверия при теракте (риск 60%).', fn:g=>{ if(Math.random()<0.6){ g.trust-=12; g.population=Math.floor(g.population*0.97); } else g.trust+=1; } },
+    ] },
+];
+
+let game = null;
+
+function newGame(){
+  const g = {
+    version: GAME_VERSION, turn: 1,
+    money: BAL.START_MONEY, population: 0,
+    food: 0, materials: 0, energy: 0,
+    trust: 50, reputation: 50,
+    army: { soldiers:0, tanks:0, planes:0, missiles:0 },
+    taxRate: 10, cols: 5, cells: [], captured: [],
+    techPoints: 0, techs: {}, corruption: 0, mediaLevel: 0,
+    nextEventTurn: 7, pendingTrust: 0,
+    gameOver: false, winFlag: false, log: [],
+    stats: { warsWon:0, warsLost:0, built:0, spent:0, earned:0 },
+    lastMediaTurn: -99, lastAntiCorrTurn: -99,
+  };
+  for(let i=0;i<25;i++){
+    const r = Math.random();
+    let terrain = 'empty';
+    if(r < 0.20) terrain = 'forest';
+    else if(r < 0.30) terrain = 'water';
+    g.cells.push({ terrain, building:null });
+  }
+  game = g;
+  addLog('Вы избраны президентом. Страна ждёт решений.', 'good');
+  addLog('Постройте дома и фермы, чтобы начать.', '');
+  return g;
+}
+
+/* ---------- Утилиты ---------- */
+function fmt(n){
+  n = Math.round(n);
+  const neg = n < 0, a = Math.abs(n);
+  let s;
+  if(a >= 1e9) s = (a/1e9).toFixed(2).replace(/\.?0+$/,'') + ' млрд';
+  else if(a >= 1e6) s = (a/1e6).toFixed(2).replace(/\.?0+$/,'') + ' млн';
+  else if(a >= 1e4) s = (a/1e3).toFixed(1).replace(/\.?0+$/,'') + 'к';
+  else s = a.toLocaleString('ru-RU');
+  return (neg?'−':'') + s;
+}
+function fmtFull(n){ return Math.round(n).toLocaleString('ru-RU'); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+function countBuildings(){
+  const c = {};
+  for(const k in BUILDINGS) c[k] = 0;
+  for(const cell of game.cells) if(cell.building) c[cell.building]++;
+  return c;
+}
+function militaryPower(a){
+  a = a || game.army;
+  return a.soldiers*1 + a.tanks*50 + a.planes*100 + a.missiles*200;
+}
+function addLog(text, cls){
+  game.log.unshift({ t: game.turn, text, cls: cls||'' });
+  if(game.log.length > 60) game.log.pop();
+}
+
+/* ---------- Множители ---------- */
+function multipliers(c){
+  const t = game.techs;
+  const schools = c.school;
+  return {
+    prodMult:   (1 + 0.15*schools) * (1 + (t.industry1?0.6:0) + (t.industry2?0.6:0)),
+    foodMult:   (1 + 0.25*schools) * (1 + (t.agriculture1?1:0) + (t.agriculture2?1:0) + (t.agriculture3?1:0)) * (1 + 0.20*game.captured.length),
+    energyMult: (1 + (t.energy1?0.6:0) + (t.energy2?0.6:0)),
+    popMult:    (1 + (t.medicine1?0.6:0) + (t.medicine2?0.6:0)),
+    taxMult:    (1 + (t.economy1?0.3:0) + (t.economy2?0.3:0)),
+  };
+}
+
+/* ---------- Прогноз экономики ---------- */
+function forecast(){
+  const c = countBuildings();
+  const m = multipliers(c);
+  let sawmillBase = 0;
+  for(const cell of game.cells){
+    if(cell.building === 'sawmill') sawmillBase += (cell.terrain === 'forest') ? 10 : 5;
+  }
+  const food      = c.farm * BAL.FARM_FOOD * m.foodMult;
+  const materials = sawmillBase * m.prodMult;
+  const energy    = c.power * 20 * m.energyMult;
+  const foodNeed  = game.population * BAL.FOOD_PER_POP;
+  const capacity  = c.house * BAL.CAP_HOUSE + c.hospital * BAL.CAP_HOSPITAL;
+  const taxIncome = game.population * game.taxRate * BAL.TAX_MULT * m.taxMult;
+  const armyUpkeep = game.army.soldiers*10 + game.army.tanks*200 + game.army.planes*500 + game.army.missiles*100;
+  const tribute   = game.captured.length * 150000;
+  const foodCap   = Math.max(200, capacity * BAL.FOOD_CAP_MULT);
+  return { c, m, food, materials, energy, foodNeed, capacity, taxIncome, armyUpkeep, tribute, foodCap };
+}
+
+/* ---------- ХОД ---------- */
+function nextTurn(){
+  if(game.gameOver) return;
+  if(document.getElementById('modalLayer').classList.contains('active')) return;
+
+  const f = forecast();
+  const c = f.c;
+  const t = game.techs;
+
+  let moneyDelta = 0;
+  const logLines = [];
+
+  /* Проверка blackout — до начисления, но применяем эффект ко всему ходу */
+  const blackout = game.money < 0;
+  const blackoutMult = blackout ? 0.4 : 1;
+
+  /* Производство ресурсов */
+  game.food      += f.food;
+  game.materials += f.materials;
+  game.energy    += f.energy;
+
+  /* Военное производство */
+  let madeSoldiers = Math.floor(c.barracks * 10 * blackoutMult);
+  game.army.soldiers += madeSoldiers;
+
+  let madeTanks = 0;
+  for(let i=0;i<c.tankFactory;i++){
+    if(game.materials >= 10 && game.energy >= 15){
+      game.materials -= 10; game.energy -= 15; madeTanks++;
+    } else break;
+  }
+  game.army.tanks += madeTanks;
+
+  let madePlanes = 0;
+  for(let i=0;i<c.airFactory;i++){
+    if(game.materials >= 15 && game.energy >= 20){
+      game.materials -= 15; game.energy -= 20; madePlanes++;
+    } else break;
+  }
+  game.army.planes += madePlanes;
+
+  let madeMissiles = 0;
+  for(let i=0;i<c.missileComplex;i++){
+    if(game.materials >= 20 && game.energy >= 30 && game.money >= 10000){
+      game.materials -= 20; game.energy -= 30; game.money -= 10000; madeMissiles++;
+    } else break;
+  }
+  game.army.missiles += madeMissiles;
+
+  /* Заводы */
+  let factoriesWorking = 0;
+  for(let i=0;i<c.factory;i++){
+    if(game.materials >= 5 && game.energy >= 10){
+      game.materials -= 5; game.energy -= 10; factoriesWorking++;
+    } else break;
+  }
+  moneyDelta += factoriesWorking * BAL.FACTORY_INCOME * f.m.prodMult * blackoutMult;
+
+  /* Налоги */
+  let taxIncome = f.taxIncome * blackoutMult * (1 - game.corruption/100);
+  moneyDelta += taxIncome;
+
+  /* Дань */
+  moneyDelta += f.tribute;
+
+  /* Содержание армии */
+  moneyDelta -= f.armyUpkeep;
+
+  /* Содержание зданий */
+  const buildingUpkeep = c.house*50 + c.farm*80 + c.sawmill*100 + c.power*250
+                       + c.factory*600 + c.hospital*300 + c.school*250
+                       + c.barracks*400 + c.tankFactory*900 + c.airFactory*1200
+                       + c.missileComplex*2000;
+  moneyDelta -= buildingUpkeep;
+
+  game.money += moneyDelta;
+
+  /* Население */
+  let popGrowth = 0, starving = false;
+  const foodAfter = game.food - f.foodNeed;
+
+  if(foodAfter >= 0){
+    game.food = foodAfter;
+    const baseGrowth = c.house * BAL.HOUSE_POP + c.hospital * BAL.HOSPITAL_POP;
+    const compound   = Math.min(BAL.COMPOUND_MAX, Math.floor(game.population * 0.05));
+    popGrowth = Math.floor((baseGrowth + compound) * f.m.popMult);
+    if(game.population + popGrowth > f.capacity){
+      popGrowth = Math.max(0, f.capacity - game.population);
+    }
+  } else {
+    starving = true;
+    popGrowth = -Math.ceil(-foodAfter * 10);
+    game.food = 0;
+  }
+  game.population = Math.max(0, game.population + popGrowth);
+
+  /* Крышка на запас еды */
+  if(game.food > f.foodCap) game.food = f.foodCap;
+  if(game.materials > 5000) game.materials = 5000;
+
+  /* Доверие */
+  let trustDelta = 0;
+  if(starving) trustDelta -= 8;
+  if(game.population > 0 && foodAfter > game.population * BAL.FOOD_PER_POP * 0.4) trustDelta += 1.2;
+  if(f.capacity > 0 && game.population < f.capacity * 0.85) trustDelta += 0.6;
+  trustDelta += Math.min(2.5, c.hospital * 0.4);
+  trustDelta -= Math.max(0, (game.taxRate - 15) * 0.22);
+  trustDelta -= game.corruption * 0.06;
+  trustDelta += game.mediaLevel * 0.4;
+  if(t.media1) trustDelta += 1.5;
+  if(c.school >= 3) trustDelta += 0.8;
+  if(game.money < 0) trustDelta -= 4;
+  if(blackout) trustDelta -= 2;
+  if(popGrowth > 20) trustDelta += 0.5;
+  if(game.pendingTrust){ trustDelta += game.pendingTrust; game.pendingTrust = 0; }
+  game.trust = clamp(game.trust + trustDelta, 0, 100);
+
+  /* Репутация */
+  let repDelta = 0;
+  if(game.army.missiles > 20) repDelta -= 1;
+  if(game.army.soldiers > 500) repDelta -= 0.5;
+  if(game.trust > 70) repDelta += 0.5;
+  if(game.trust < 25) repDelta -= 0.5;
+  repDelta -= game.corruption * 0.03;
+  game.reputation = clamp(game.reputation + repDelta, 0, 100);
+
+  /* Коррупция */
+  game.corruption = Math.min(60, game.corruption + 0.35 + c.factory*0.06);
+
+  /* Наука */
+  game.techPoints += 1 + c.school * (2 + (t.education1?1:0));
+
+  /* Логи */
+  if(madeSoldiers) logLines.push({ t:`Призвано солдат: +${madeSoldiers}`, c:'good' });
+  if(madeTanks)    logLines.push({ t:`Выпущено танков: +${madeTanks}`, c:'good' });
+  if(madePlanes)   logLines.push({ t:`Выпущено самолётов: +${madePlanes}`, c:'good' });
+  if(madeMissiles) logLines.push({ t:`Собрано ракет: +${madeMissiles}`, c:'good' });
+  if(c.factory && factoriesWorking < c.factory)
+    logLines.push({ t:`Часть заводов простаивает: не хватает материалов/энергии`, c:'warn' });
+  if(starving) logLines.push({ t:`ГОЛОД! Люди умирают (−${Math.abs(popGrowth)} чел.)`, c:'bad' });
+  else if(popGrowth > 0) logLines.push({ t:`Прирост населения: +${popGrowth}`, c:'' });
+  else if(popGrowth === 0 && c.house === 0 && game.population === 0)
+    logLines.push({ t:`Постройте дом — иначе люди не придут`, c:'warn' });
+  if(blackout) logLines.push({ t:`Казна в минусе — производство урезано`, c:'bad' });
+
+  for(const l of logLines) addLog(l.t, l.c);
+
+  game.turn++;
+  let eventToShow = null;
+  if(game.turn >= game.nextEventTurn){
+    eventToShow = EVENTS[Math.floor(Math.random()*EVENTS.length)];
+    game.nextEventTurn = game.turn + 5 + Math.floor(Math.random()*6);
+  }
+
+  save();
+  render();
+
+  if(checkEnd()) return;
+  if(eventToShow) setTimeout(()=>showEvent(eventToShow), 200);
+}
+
+/* ---------- Конец игры ---------- */
+function checkEnd(){
+  if(game.gameOver) return true;
+  if(game.trust < 10){ endGame(false, 'Доверие народа упало ниже 10%. Вас свергли.'); return true; }
+  if(game.turn > 5 && game.population <= 0){ endGame(false, 'Население страны равно нулю. Государство опустело.'); return true; }
+  if(game.money < -100000){ endGame(false, 'Долг превысил 100 000 ₽. Экономика рухнула.'); return true; }
+  if(game.population > 10000 && game.trust > 80 && game.reputation > 80 && game.captured.length >= 2){
+    endGame(true, 'Вы построили великую державу! Народ любит вас, мир уважает, враги повержены.'); return true;
+  }
+  return false;
+}
+function endGame(win, text){
+  game.gameOver = true; game.winFlag = win; save();
+  const cls = win ? 'good' : 'bad';
+  openModal({
+    title: win ? '🏆 ПОБЕДА!' : '💀 ИГРА ОКОНЧЕНА',
+    body:`
+      <div class="notice ${cls}" style="font-size:14px;">${text}</div>
+      <div class="kv"><span>Ход</span><span>${game.turn}</span></div>
+      <div class="kv"><span>Население</span><span>${fmtFull(game.population)}</span></div>
+      <div class="kv"><span>Деньги</span><span>${fmt(game.money)} ₽</span></div>
+      <div class="kv"><span>Доверие</span><span>${Math.round(game.trust)}%</span></div>
+      <div class="kv"><span>Репутация</span><span>${Math.round(game.reputation)}</span></div>
+      <div class="kv"><span>Военная мощь</span><span>${fmtFull(militaryPower())}</span></div>
+      <div class="kv"><span>Захвачено стран</span><span>${game.captured.length}</span></div>
+      <div class="kv"><span>Побед в войнах</span><span>${game.stats.warsWon}</span></div>`,
+    actions:`<button class="abtn primary" onclick="restartGame()">Начать заново</button>`,
+    closable:false
+  });
+}
+function restartGame(){
+  closeModal();
+  localStorage.removeItem(SAVE_KEY);
+  newGame(); render();
+}
+
+/* ---------- Сохранение ---------- */
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(game)); }catch(e){}
+}
+function load(){
+  try{
+    const s = localStorage.getItem(SAVE_KEY);
+    if(!s) return false;
+    const d = JSON.parse(s);
+    if(!d || d.version !== GAME_VERSION) return false;
+    game = d;
+    if(!game.army) game.army = {soldiers:0,tanks:0,planes:0,missiles:0};
+    if(!game.stats) game.stats = {warsWon:0,warsLost:0,built:0,spent:0,earned:0};
+    if(!game.log) game.log = [];
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ---------- Рендер ---------- */
+function render(){ renderTop(); renderGrid(); renderBuildPanel(); renderLog(); }
+
+function renderTop(){
+  const f = forecast();
+  const foodNet = Math.round(f.food - f.foodNeed);
+  const popPct = f.capacity > 0 ? Math.round(game.population / f.capacity * 100) : 0;
+  const items = [
+    { ic:'💰', lbl:'Казна', val: fmt(game.money)+' ₽', cls: game.money < 0 ? 'bad' : (game.money < 50000 ? 'warn':'good') },
+    { ic:'👥', lbl:'Население', val: `${fmtFull(game.population)}/${fmtFull(f.capacity)}`, cls: popPct > 95 ? 'warn' : '' },
+    { ic:'🌾', lbl:'Еда', val: `${fmtFull(game.food)} (${foodNet>=0?'+':''}${fmtFull(foodNet)})`, cls: foodNet >= 0 ? 'good' : 'bad' },
+    { ic:'🪵', lbl:'Материалы', val: fmtFull(game.materials), cls:'' },
+    { ic:'⚡', lbl:'Энергия', val: fmtFull(game.energy), cls:'' },
+    { ic:'😊', lbl:'Доверие', val: Math.round(game.trust)+'%', cls: game.trust < 25 ? 'bad' : (game.trust < 50 ? 'warn':'good') },
+    { ic:'🌍', lbl:'Репутация', val: Math.round(game.reputation), cls: game.reputation < 30 ? 'bad' : (game.reputation > 70 ? 'good':'') },
+    { ic:'⚔️', lbl:'Армия', val: `MP ${fmtFull(militaryPower())}`, cls:'' },
+    { ic:'📅', lbl:'Ход', val: `${game.turn} мес.`, cls:'turn' },
+  ];
+  document.getElementById('statRow').innerHTML = items.map(i=>`
+    <div class="stat ${i.cls}">
+      <span class="ic">${i.ic}</span><span class="lbl">${i.lbl}</span><span class="val">${i.val}</span>
+    </div>`).join('');
+}
+
+function renderGrid(){
+  const el = document.getElementById('grid');
+  el.style.gridTemplateColumns = `repeat(${game.cols}, 1fr)`;
+  el.innerHTML = game.cells.map((cell,i)=>{
+    const b = cell.building ? BUILDINGS[cell.building] : null;
+    const icon = b ? b.icon : TERRAIN[cell.terrain].icon;
+    let cls = 'cell ' + cell.terrain;
+    if(b){ cls += ' has-building'; if(BUILDINGS[cell.building].cat === 'mil') cls += ' cell-mil'; }
+    const label = b ? b.name : TERRAIN[cell.terrain].name;
+    return `<div class="${cls}" onclick="onCellClick(${i})" title="${label}">
+      <span class="cell-icon">${icon}</span>
+      ${b?`<span class="cell-name">${b.name}</span>`:''}
+    </div>`;
+  }).join('');
+  const used = game.cells.filter(c=>c.building).length;
+  document.getElementById('territoryInfo').textContent =
+    `${used}/${game.cells.length} занято · свободно ${game.cells.length - used}`;
+}
+
+function renderBuildPanel(){
+  const c = countBuildings();
+  const f = forecast();
+  const t = game.techs;
+
+  function renderGroup(title, cat){
+    let html = `<div class="bgroup"><div class="bgroup-title">${title}</div>`;
+    for(const key in BUILDINGS){
+      const d = BUILDINGS[key];
+      if(d.cat !== cat) continue;
+      const cnt = c[key] || 0;
+      html += `
+        <button class="bbtn" onclick="quickBuild('${key}')">
+          <span class="bic">${d.icon}</span>
+          <span class="binfo">
+            <span class="bname">${d.name} ${cnt?`<span class="bcount">${cnt}</span>`:''}</span>
+            <span class="bdesc">${d.desc}</span>
+          </span>
+          <span class="bprice">${fmt(d.cost)}₽</span>
+        </button>`;
+    }
+    return html + '</div>';
+  }
+
+  let html = renderGroup('🏘️ Гражданские', 'civil');
+  html += renderGroup('⚔️ Военные', 'mil');
+
+  html += `
+    <div class="bgroup">
+      <div class="bgroup-title">🗺️ Расширение</div>
+      <button class="bbtn" onclick="buyLand()">
+        <span class="bic">🧱</span>
+        <span class="binfo"><span class="bname">Купить участок</span><span class="bdesc">+1 клетка территории</span></span>
+        <span class="bprice">120к ₽</span>
+      </button>
+    </div>`;
+
+  const upkeep = c.house*50+c.farm*80+c.sawmill*100+c.power*250+c.factory*600+c.hospital*300+c.school*250+c.barracks*400+c.tankFactory*900+c.airFactory*1200+c.missileComplex*2000;
+  html += `
+    <div class="bgroup">
+      <div class="bgroup-title">📈 Производство</div>
+      <div class="kv"><span>🌾 Еда</span><span style="color:var(--green)">+${Math.round(f.food)}/ход</span></div>
+      <div class="kv"><span>🍽️ Потребление</span><span style="color:var(--red)">−${Math.round(f.foodNeed)}/ход</span></div>
+      <div class="kv"><span>🪵 Материалы</span><span style="color:var(--green)">+${Math.round(f.materials)}/ход</span></div>
+      <div class="kv"><span>⚡ Энергия</span><span style="color:var(--green)">+${Math.round(f.energy)}/ход</span></div>
+      <div class="kv"><span>💰 Налоги</span><span style="color:var(--green)">+${fmt(f.taxIncome*(1-game.corruption/100))}/ход</span></div>
+      <div class="kv"><span>🎖️ Армия</span><span style="color:var(--red)">−${fmt(f.armyUpkeep)}/ход</span></div>
+      <div class="kv"><span>🏛️ Постройки</span><span style="color:var(--red)">−${fmt(upkeep)}/ход</span></div>
+      <div class="kv"><span>🔬 Науки</span><span style="color:var(--cyan)">+${1 + c.school*(2+(t.education1?1:0))}/ход</span></div>
+    </div>`;
+
+  document.getElementById('buildPanel').innerHTML = html;
+}
+
+function renderLog(){
+  const el = document.getElementById('log');
+  el.innerHTML = game.log.slice(0,40).map(l=>`
+    <div class="log-item ${l.cls}"><span class="lt">[${l.t}]</span> ${l.text}</div>
+  `).join('') || '<div class="muted small">Пока ничего не произошло...</div>';
+}
+
+/* ---------- Клик по клетке ---------- */
+function onCellClick(i){
+  if(game.gameOver) return;
+  const cell = game.cells[i];
+  if(cell.building){
+    const d = BUILDINGS[cell.building];
+    const refund = Math.floor(d.cost * 0.4);
+    openModal({
+      title: `${d.icon} ${d.name}`,
+      body:`
+        <div class="kv"><span>Эффект</span><span style="font-weight:500;font-size:12px;text-align:right;max-width:60%">${d.desc}</span></div>
+        <div class="kv"><span>Местность</span><span>${TERRAIN[cell.terrain].name}</span></div>
+        <div class="kv"><span>Стоимость</span><span>${fmt(d.cost)} ₽</span></div>
+        <hr><p class="small muted">Снос вернёт 40% стоимости.</p>`,
+      actions:`<button class="abtn danger" onclick="demolish(${i})">Снести (+${fmt(refund)} ₽)</button>
+               <button class="abtn" onclick="closeModal()">Отмена</button>`
+    });
+    return;
+  }
+  if(cell.terrain === 'water' && !game.techs.drainage){
+    openModal({ title:'🌊 Водная территория',
+      body:`<p>Здесь нельзя строить. Изучите <b>«Осушение земель»</b> в «Науках».</p>`,
+      actions:`<button class="abtn" onclick="closeModal()">Понятно</button>` });
+    return;
+  }
+  openBuildMenu(i);
+}
+
+function openBuildMenu(i){
+  const cell = game.cells[i];
+  let list = '';
+  for(const key in BUILDINGS){
+    const d = BUILDINGS[key];
+    const canMoney = game.money >= d.cost;
+    let extra = '';
+    if(key === 'sawmill' && cell.terrain === 'forest') extra = ' <span class="tag on">+100% (лес)</span>';
+    list += `<button class="opt" ${canMoney?'':'disabled style="opacity:.45"'} onclick="buildAt(${i},'${key}')">
+        <span class="opt-t">${d.icon} ${d.name} <span style="color:var(--yellow);float:right">${fmt(d.cost)} ₽</span></span>
+        <span class="opt-d">${d.desc}${extra}</span>
+      </button>`;
+  }
+  openModal({
+    title: `🏗️ Строительство (${TERRAIN[cell.terrain].name})`,
+    body: `<div class="notice">Свободно в казне: <b>${fmtFull(game.money)} ₽</b></div><div class="scroll-y">${list}</div>`,
+    actions:`<button class="abtn" onclick="closeModal()">Отмена</button>`
+  });
+}
+
+function buildAt(i, key){
+  const d = BUILDINGS[key];
+  if(game.money < d.cost) return;
+  const cell = game.cells[i];
+  if(cell.building) return;
+  if(cell.terrain === 'water' && !game.techs.drainage) return;
+  game.money -= d.cost;
+  cell.building = key;
+  game.stats.built++; game.stats.spent += d.cost;
+  addLog(`Построено: ${d.name}`, 'good');
+  if(key === 'house' || key === 'hospital' || key === 'school') game.trust = clamp(game.trust + 0.5, 0, 100);
+  save(); closeModal(); render(); checkEnd();
+}
+
+function quickBuild(key){
+  const d = BUILDINGS[key];
+  if(game.money < d.cost){
+    openModal({ title:'💸 Недостаточно денег',
+      body:`<p>Нужно <b>${fmtFull(d.cost)} ₽</b>, у вас <b>${fmtFull(game.money)} ₽</b>.</p>`,
+      actions:`<button class="abtn" onclick="closeModal()">Ок</button>` });
+    return;
+  }
+  let idx = -1;
+  if(key === 'sawmill') idx = game.cells.findIndex(c => !c.building && c.terrain === 'forest');
+  if(idx === -1) idx = game.cells.findIndex(c => !c.building && c.terrain !== 'water');
+  if(idx === -1 && game.techs.drainage) idx = game.cells.findIndex(c => !c.building);
+  if(idx === -1){
+    openModal({ title:'🗺️ Нет свободной земли',
+      body:`<p>Все клетки заняты. Купите участок или захватите территорию.</p>`,
+      actions:`<button class="abtn" onclick="closeModal()">Ок</button>` });
+    return;
+  }
+  buildAt(idx, key);
+}
+
+function demolish(i){
+  const cell = game.cells[i];
+  if(!cell.building) return;
+  const d = BUILDINGS[cell.building];
+  const refund = Math.floor(d.cost * 0.4);
+  game.money += refund;
+  addLog(`Снесено: ${d.name} (+${fmt(refund)} ₽)`, 'warn');
+  cell.building = null;
+  save(); closeModal(); render();
+}
+
+function buyLand(){
+  const cost = 120000;
+  if(game.money < cost){
+    openModal({ title:'💸 Недостаточно денег', body:`<p>Нужно ${fmt(cost)} ₽.</p>`,
+      actions:`<button class="abtn" onclick="closeModal()">Ок</button>` });
+    return;
+  }
+  game.money -= cost;
+  const r = Math.random();
+  let terrain = 'empty';
+  if(r < 0.25) terrain = 'forest';
+  else if(r < 0.35) terrain = 'water';
+  game.cells.push({ terrain, building:null });
+  addLog(`Куплен участок (${TERRAIN[terrain].name})`, 'good');
+  save(); render();
+}
+
+/* ---------- Модалки ---------- */
+function openModal({title, body, actions, closable=true}){
+  const layer = document.getElementById('modalLayer');
+  layer.innerHTML = `
+    <div class="modal-backdrop" ${closable?'onclick="closeModal()"':''}></div>
+    <div class="modal">
+      <h2>${title}</h2>
+      <div class="modal-body">${body}</div>
+      <div class="modal-actions">${actions||'<button class="abtn" onclick="closeModal()">Закрыть</button>'}</div>
+    </div>`;
+  layer.classList.add('active');
+}
+function closeModal(){
+  const layer = document.getElementById('modalLayer');
+  layer.classList.remove('active'); layer.innerHTML = '';
+}
+
+/* ---------- Налоги ---------- */
+function openTaxMenu(){
+  const f = forecast();
+  const incomeNow = game.population * game.taxRate * BAL.TAX_MULT * f.m.taxMult * (1 - game.corruption/100);
+  const trustPenalty = Math.max(0, (game.taxRate - 15) * 0.22);
+  openModal({
+    title:'💰 Налоговая политика',
+    body:`
+      <div class="notice">Текущая ставка: <b>${game.taxRate}%</b><br>
+        Доход: <b>~${fmtFull(incomeNow)} ₽/ход</b><br>
+        Штраф к доверию: <b>−${trustPenalty.toFixed(1)}/ход</b></div>
+      <input type="range" min="0" max="50" value="${game.taxRate}" class="slider" id="taxSlider" oninput="updateTaxPreview()">
+      <div class="center big-num" id="taxVal">${game.taxRate}%</div>
+      <div class="center small muted" id="taxPreview"></div>
+      <hr><p class="small muted">Низкие налоги (0–15%) — доверие растёт. Высокие (30–50%) — казна полнеет, народ ропщет.</p>`,
+    actions:`<button class="abtn primary" onclick="applyTax()">Применить</button>
+             <button class="abtn" onclick="closeModal()">Отмена</button>`
+  });
+  updateTaxPreview();
+}
+function updateTaxPreview(){
+  const el = document.getElementById('taxSlider'); if(!el) return;
+  const v = parseInt(el.value,10);
+  document.getElementById('taxVal').textContent = v + '%';
+  const f = forecast();
+  const income = game.population * v * BAL.TAX_MULT * f.m.taxMult * (1 - game.corruption/100);
+  const penalty = Math.max(0, (v - 15) * 0.22);
+  document.getElementById('taxPreview').innerHTML =
+    `Доход: <b style="color:var(--green)">~${fmtFull(income)} ₽/ход</b> · Штраф: <b style="color:var(--red)">−${penalty.toFixed(1)}/ход</b>`;
+}
+function applyTax(){
+  const v = parseInt(document.getElementById('taxSlider').value,10);
+  game.taxRate = v;
+  addLog(`Ставка налога → ${v}%`, 'warn');
+  save(); closeModal(); render();
+}
+
+/* ---------- Армия ---------- */
+function openArmyMenu(){
+  const a = game.army, mp = militaryPower();
+  const upkeep = a.soldiers*10 + a.tanks*200 + a.planes*500 + a.missiles*100;
+  openModal({
+    title:'🎖️ Вооружённые силы',
+    body:`
+      <div class="notice">Военная мощь (MP): <b style="font-size:18px;">${fmtFull(mp)}</b><br>
+        Содержание: <b style="color:var(--red)">−${fmtFull(upkeep)} ₽/ход</b></div>
+      <div class="kv"><span>👤 Солдаты</span><span>${fmtFull(a.soldiers)} <span class="muted small">(MP ${fmtFull(a.soldiers)}, −${fmtFull(a.soldiers*10)}₽)</span></span></div>
+      <div class="kv"><span>🛡️ Танки</span><span>${fmtFull(a.tanks)} <span class="muted small">(MP ${fmtFull(a.tanks*50)}, −${fmtFull(a.tanks*200)}₽)</span></span></div>
+      <div class="kv"><span>✈️ Самолёты</span><span>${fmtFull(a.planes)} <span class="muted small">(MP ${fmtFull(a.planes*100)}, −${fmtFull(a.planes*500)}₽)</span></span></div>
+      <div class="kv"><span>🚀 Ракеты</span><span>${fmtFull(a.missiles)} <span class="muted small">(MP ${fmtFull(a.missiles*200)}, −${fmtFull(a.missiles*100)}₽)</span></span></div>
+      <hr><h3>Бонусы к войне</h3>
+      <div>
+        <span class="tag ${a.missiles>0?'on':'off'}">🚀 +10% за ракеты</span>
+        <span class="tag ${a.planes>0?'on':'off'}">✈️ +5% за самолёты</span>
+        <span class="tag ${game.techs.military1?'on':'off'}">🔬 +8% Совр. армия</span>
+        <span class="tag ${game.techs.military2?'on':'off'}">🔬 +8% Кибервойска</span>
+        <span class="tag ${countBuildings().school>=3?'on':'off'}">🎓 +10% за 3+ школ</span>
+        <span class="tag ${game.reputation>70?'on':'off'}">🌍 +5% за репутацию</span>
+        <span class="tag ${game.trust<30?'off':'on'}">😊 ${game.trust<30?'−15% доверие <30':'доверие ОК'}</span>
+        <span class="tag ${game.money<0?'off':'on'}">💰 ${game.money<0?'−10% казна в минусе':'казна ОК'}</span>
+      </div>
+      <hr><p class="small muted">
+        <b>Как усилить армию:</b> казармы → солдаты. Танковый/Авиа/Ракетный заводы → техника.
+        Для техники нужны материалы и энергия — стройте Лесопилки и Электростанции.
+        Ракеты дают больше всего MP (+200) и +10% к шансу победы.
+      </p>`,
+    actions:`<button class="abtn" onclick="closeModal()">Закрыть</button>`
+  });
+}
+
+/* ---------- Война ---------- */
+function openWarMenu(){
+  const myMP = militaryPower();
+  const c = countBuildings();
+  const t = game.techs;
+  let list = '';
+  for(const country of COUNTRIES){
+    const already = game.captured.includes(country.id);
+    const chance = computeWarChance(country, myMP, c, t);
+    const canAfford = game.money >= country.cost;
+    const barColor = chance >= 60 ? 'var(--green)' : chance >= 35 ? 'var(--yellow)' : 'var(--red)';
+    list += `
+      <div class="country ${already?'defeated':''}">
+        <div class="flag">${country.flag}</div>
+        <div class="cinfo">
+          <div class="cname">${country.name} ${already?'<span class="tag on">захвачена</span>':''}</div>
+          <div class="cmeta">MP: <b>${fmtFull(country.mp)}</b> · Атака: <b>${fmt(country.cost)} ₽</b><br>${country.desc}</div>
+          ${!already?`
+            <div class="chance-bar"><div class="chance-fill" style="width:${chance}%;background:${barColor}"></div></div>
+            <div class="small" style="margin-top:2px;color:${barColor}">Шанс победы: <b>${chance.toFixed(1)}%</b></div>`:''}
+        </div>
+        <div class="cact">
+          ${already ? '<span class="muted small">🏳️</span>'
+            : `<button class="abtn ${canAfford?'danger':''}" ${canAfford?'':'disabled'} onclick="confirmWar('${country.id}')">Атаковать</button>`}
+        </div>
+      </div>`;
+  }
+  openModal({
+    title:'⚔️ Генеральный штаб',
+    body:`<div class="notice warn">Ваша военная мощь: <b>${fmtFull(myMP)}</b><br>
+        <span class="small">Победа = +3 клетки и дань. Поражение катастрофично.</span></div>
+      <div class="scroll-y">${list}</div>
+      <hr><p class="small muted">
+        <b>Формула:</b> шанс = ваш MP / (ваш MP + MP врага) × 100% + модификаторы.<br>
+        Без сильной армии шанс почти нулевой даже при полной казне.
+      </p>`,
+    actions:`<button class="abtn" onclick="closeModal()">Закрыть</button>`
+  });
+}
+
+function computeWarChance(country, myMP, c, t){
+  let ratio = myMP / (myMP + country.mp);
+  let chance = ratio * 100;
+  if(game.army.missiles > 0) chance += 10;
+  if(game.army.planes > 0)   chance += 5;
+  if(game.trust < 30)        chance -= 15;
+  if(game.reputation > 70)   chance += 5;
+  if(game.money < 0)         chance -= 10;
+  if(c.school >= 3)          chance += 10;
+  if(t.military1)            chance += 8;
+  if(t.military2)            chance += 8;
+  return clamp(chance, 5, 90);
+}
+
+function confirmWar(id){
+  const country = COUNTRIES.find(x=>x.id===id);
+  if(!country || game.captured.includes(id)) return;
+  if(game.money < country.cost){
+    openModal({ title:'💸 Недостаточно средств', body:`<p>Нужно ${fmtFull(country.cost)} ₽.</p>`,
+      actions:`<button class="abtn" onclick="closeModal()">Ок</button>` });
+    return;
+  }
+  const myMP = militaryPower();
+  const chance = computeWarChance(country, myMP, countBuildings(), game.techs);
+  openModal({
+    title:`⚔️ Объявление войны: ${country.name}`,
+    body:`<div class="notice bad">
+        Атака на <b>${country.flag} ${country.name}</b>.<br>
+        Стоимость: <b>${fmtFull(country.cost)} ₽</b> (списывается)<br>
+        Ваш MP: <b>${fmtFull(myMP)}</b> · MP врага: <b>${fmtFull(country.mp)}</b><br>
+        Шанс победы: <b>${chance.toFixed(1)}%</b></div>
+      <p class="small muted">Победа: +3 клетки, дань ${fmt(country.reward)} ₽/ход, −30% армии, −15 репутации.<br>
+        Поражение: −50% денег, −20% населения, −60% армии, −20 доверия, −15 репутации.</p>`,
+    actions:`<button class="abtn danger" onclick="startWar('${id}')">Начать вторжение</button>
+             <button class="abtn" onclick="closeModal()">Отмена</button>`
+  });
+}
+
+function startWar(id){
+  const country = COUNTRIES.find(x=>x.id===id);
+  if(!country || game.money < country.cost) return;
+  game.money -= country.cost;
+  game.stats.spent += country.cost;
+  addLog(`Объявлена война: ${country.name}`, 'bad');
+  const myMP = militaryPower();
+  const chance = computeWarChance(country, myMP, countBuildings(), game.techs);
+  const layer = document.getElementById('modalLayer');
+  layer.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal">
+      <h2>⚔️ Битва идёт...</h2>
+      <div class="center" style="font-size:40px;margin:8px 0;">${country.flag}</div>
+      <div class="progress"><div class="progress-fill" id="warProg"></div></div>
+      <p class="war-msg" id="warMsg">Подготовка войск...</p>
+      <div class="center small muted" id="warPct" style="margin-top:6px;">0%</div>
+    </div>`;
+  layer.classList.add('active');
+  const messages = [
+    'Танковые колонны выдвигаются к границе...',
+    'Авиация наносит удары по позициям противника...',
+    'Противник оказывает ожесточённое сопротивление...',
+    'Ракетный удар по командному центру...',
+    'Пехота входит в приграничные города...',
+    'Генштаб запрашивает подкрепление...',
+    'Исход сражения решается на флангах...',
+    'Мировая общественность требует прекратить огонь...',
+  ];
+  let prog = 0;
+  const iv = setInterval(()=>{
+    prog += 4 + Math.random()*9;
+    if(prog > 100) prog = 100;
+    const fill = document.getElementById('warProg');
+    const pct = document.getElementById('warPct');
+    const msg = document.getElementById('warMsg');
+    if(fill) fill.style.width = prog + '%';
+    if(pct) pct.textContent = Math.round(prog) + '%';
+    if(msg && Math.random() < 0.55) msg.textContent = messages[Math.floor(Math.random()*messages.length)];
+    if(prog >= 100){ clearInterval(iv); setTimeout(()=>resolveWar(country, chance), 500); }
+  }, 220);
+}
+
+function resolveWar(country, chance){
+  const roll = Math.random() * 100;
+  const victory = roll < chance;
+  if(victory){
+    game.stats.warsWon++;
+    game.captured.push(country.id);
+    for(let k=0;k<3;k++){
+      const r = Math.random();
+      let terrain = 'empty';
+      if(r < 0.2) terrain = 'forest';
+      else if(r < 0.3) terrain = 'water';
+      game.cells.push({ terrain, building:null });
+    }
+    game.army.soldiers = Math.floor(game.army.soldiers * 0.7);
+    game.army.tanks    = Math.floor(game.army.tanks * 0.7);
+    game.army.planes   = Math.floor(game.army.planes * 0.7);
+    game.army.missiles = Math.floor(game.army.missiles * 0.7);
+    game.trust = clamp(game.trust + 10, 0, 100);
+    game.reputation = clamp(game.reputation - 15, 0, 100);
+    const loot = Math.floor(country.reward * 3);
+    game.money += loot;
+    addLog(`ПОБЕДА над ${country.name}! Контрибуция ${fmt(loot)} ₽`, 'good');
+    addLog(`Захвачено 3 территории. Мир осудил агрессию.`, 'warn');
+    openModal({
+      title:'🏆 Победа!',
+      body:`<div class="notice good" style="font-size:15px;">
+          <b>${country.flag} ${country.name} повержена!</b><br>Ваши войска вошли в столицу.</div>
+        <div class="kv"><span>Контрибуция</span><span style="color:var(--green)">+${fmtFull(loot)} ₽</span></div>
+        <div class="kv"><span>Новые территории</span><span style="color:var(--green)">+3 клетки</span></div>
+        <div class="kv"><span>Дань в месяц</span><span style="color:var(--green)">+${fmtFull(country.reward)} ₽</span></div>
+        <div class="kv"><span>Потери армии</span><span style="color:var(--red)">−30%</span></div>
+        <div class="kv"><span>Доверие</span><span style="color:var(--green)">+10</span></div>
+        <div class="kv"><span>Репутация</span><span style="color:var(--red)">−15</span></div>`,
+      actions:`<button class="abtn primary" onclick="closeModal();render();">Продолжить</button>`
+    });
+  } else {
+    game.stats.warsLost++;
+    const lostMoney = Math.floor(Math.max(0, game.money) * 0.5);
+    game.money -= lostMoney + 500000;
+    game.population = Math.floor(game.population * 0.8);
+    game.army.soldiers = Math.floor(game.army.soldiers * 0.4);
+    game.army.tanks    = Math.floor(game.army.tanks * 0.4);
+    game.army.planes   = Math.floor(game.army.planes * 0.4);
+    game.army.missiles = Math.floor(game.army.missiles * 0.4);
+    game.trust = clamp(game.trust - 20, 0, 100);
+    game.reputation = clamp(game.reputation - 15, 0, 100);
+    addLog(`ПОРАЖЕНИЕ в войне с ${country.name}. Страна в трауре.`, 'bad');
+    openModal({
+      title:'💀 Поражение',
+      body:`<div class="notice bad" style="font-size:15px;">
+          <b>${country.flag} ${country.name} отразила атаку.</b><br>Фронт рухнул, войска отступают.</div>
+        <div class="kv"><span>Потеряно денег</span><span style="color:var(--red)">−${fmtFull(lostMoney + 500000)} ₽</span></div>
+        <div class="kv"><span>Потери населения</span><span style="color:var(--red)">−20%</span></div>
+        <div class="kv"><span>Потери армии</span><span style="color:var(--red)">−60%</span></div>
+        <div class="kv"><span>Доверие</span><span style="color:var(--red)">−20</span></div>
+        <div class="kv"><span>Репутация</span><span style="color:var(--red)">−15</span></div>`,
+      actions:`<button class="abtn primary" onclick="closeModal();render();">Продолжить</button>`
+    });
+  }
+  save();
+  setTimeout(()=>{ render(); checkEnd(); }, 100);
+}
+
+/* ---------- Технологии ---------- */
+function openTechMenu(){
+  let html = `<div class="notice">🔬 Научные очки: <b style="font-size:16px;">${game.techPoints}</b>
+    <span class="small muted">(+${1 + countBuildings().school*(2+(game.techs.education1?1:0))}/ход)</span></div><div class="scroll-y">`;
+  const groups = [
+    ['🌾 Сельское хозяйство', ['agriculture1','agriculture2','agriculture3']],
+    ['🏭 Промышленность', ['industry1','industry2']],
+    ['⚡ Энергетика', ['energy1','energy2']],
+    ['🏥 Медицина', ['medicine1','medicine2']],
+    ['⚔️ Военные технологии', ['military1','military2']],
+    ['💰 Экономика', ['economy1','economy2']],
+    ['📺 Идеология и земля', ['media1','drainage','education1']],
+  ];
+  for(const [gname, ids] of groups){
+    html += `<h3>${gname}</h3>`;
+    for(const id of ids){
+      const t = TECHS[id];
+      const owned = !!game.techs[id];
+      const reqOk = t.req.every(r=>game.techs[r]);
+      const canBuy = !owned && reqOk && game.techPoints >= t.cost;
+      let statusTag = '';
+      if(owned) statusTag = '<span class="tag on">Изучено</span>';
+      else if(!reqOk) statusTag = `<span class="tag off">Требует: ${t.req.map(r=>TECHS[r].name).join(', ')}</span>`;
+      html += `<button class="opt" ${canBuy?'':'disabled style="opacity:.5"'} onclick="buyTech('${id}')">
+          <span class="opt-t">${t.name}
+            <span style="float:right;color:${owned?'var(--green)':'var(--cyan)'}">${owned?'✓':t.cost+' 🔬'}</span>
+          </span>
+          <span class="opt-d">${t.desc} ${statusTag}</span>
+        </button>`;
+    }
+  }
+  html += `</div>`;
+  openModal({ title:'🔬 Научные исследования', body: html,
+    actions:`<button class="abtn" onclick="closeModal()">Закрыть</button>` });
+}
+function buyTech(id){
+  const t = TECHS[id];
+  if(!t || game.techs[id]) return;
+  if(!t.req.every(r=>game.techs[r])) return;
+  if(game.techPoints < t.cost) return;
+  game.techPoints -= t.cost;
+  game.techs[id] = true;
+  addLog(`Изучена технология: ${t.name}`, 'good');
+  game.trust = clamp(game.trust + 0.5, 0, 100);
+  save(); closeModal(); render(); openTechMenu();
+}
+
+/* ---------- Внутренняя политика ---------- */
+function openDomesticMenu(){
+  const c = countBuildings();
+  const mediaCost = 150000 + game.mediaLevel * 50000;
+  const antiCorrCost = 250000;
+  const mediaCd = game.turn - game.lastMediaTurn;
+  const antiCd = game.turn - game.lastAntiCorrTurn;
+  openModal({
+    title:'🏛️ Внутренняя политика',
+    body:`
+      <div class="notice">Уровень пропаганды: <b>${game.mediaLevel}</b> (+${(game.mediaLevel*0.4).toFixed(1)} доверия/ход)<br>
+        Коррупция: <b style="color:${game.corruption>30?'var(--red)':'var(--yellow)'}">${game.corruption.toFixed(1)}%</b>
+        (снижает доходы и доверие)</div>
+      <h3>📺 Медиа-кампания</h3>
+      <p class="small muted">Пропаганда повышает доверие. Каждая следующая — сильнее.</p>
+      <button class="opt" ${game.money>=mediaCost && mediaCd>=3 ? '' : 'disabled style="opacity:.5"'} onclick="runMedia()">
+        <span class="opt-t">Запустить кампанию
+          <span style="float:right;color:var(--yellow)">${fmtFull(mediaCost)} ₽</span></span>
+        <span class="opt-d">+10 доверия сразу, +0.4/ход навсегда. Уровень СМИ → ${game.mediaLevel+1}.
+          ${mediaCd<3 ? `<br><span style="color:var(--red)">Перезарядка: ещё ${3-mediaCd} мес.</span>` : ''}</span>
+      </button>
+      <h3>⚖️ Антикоррупционная кампания</h3>
+      <button class="opt" ${game.money>=antiCorrCost && antiCd>=3 ? '' : 'disabled style="opacity:.5"'} onclick="runAntiCorruption()">
+        <span class="opt-t">Провести чистку
+          <span style="float:right;color:var(--yellow)">${fmtFull(antiCorrCost)} ₽</span></span>
+        <span class="opt-d">−20 коррупции, +6 доверия, −2 репутации.
+          ${antiCd<3 ? `<br><span style="color:var(--red)">Перезарядка: ещё ${3-antiCd} мес.</span>` : ''}</span>
+      </button>
+      <h3>📊 Информация</h3>
+      <div class="kv"><span>Гражданские здания</span><span>${c.house+c.farm+c.sawmill+c.power+c.factory+c.hospital+c.school}</span></div>
+      <div class="kv"><span>Военные здания</span><span>${c.barracks+c.tankFactory+c.airFactory+c.missileComplex}</span></div>
+      <div class="kv"><span>Вместимость</span><span>${fmtFull(c.house*BAL.CAP_HOUSE + c.hospital*BAL.CAP_HOSPITAL)}</span></div>`,
+    actions:`<button class="abtn" onclick="closeModal()">Закрыть</button>`
+  });
+}
+function runMedia(){
+  const cost = 150000 + game.mediaLevel * 50000;
+  if(game.money < cost || game.turn - game.lastMediaTurn < 3) return;
+  game.money -= cost; game.mediaLevel++;
+  game.trust = clamp(game.trust + 10, 0, 100);
+  game.reputation = clamp(game.reputation + 3, 0, 100);
+  game.lastMediaTurn = game.turn;
+  addLog(`Медиа-кампания проведена (уровень ${game.mediaLevel})`, 'good');
+  save(); closeModal(); render(); openDomesticMenu();
+}
+function runAntiCorruption(){
+  const cost = 250000;
+  if(game.money < cost || game.turn - game.lastAntiCorrTurn < 3) return;
+  game.money -= cost;
+  game.corruption = Math.max(0, game.corruption - 20);
+  game.trust = clamp(game.trust + 6, 0, 100);
+  game.reputation = clamp(game.reputation - 2, 0, 100);
+  game.lastAntiCorrTurn = game.turn;
+  addLog('Антикоррупционная чистка проведена', 'good');
+  save(); closeModal(); render(); openDomesticMenu();
+}
+
+/* ---------- Статистика ---------- */
+function openStatsMenu(){
+  const c = countBuildings();
+  const f = forecast();
+  const m = f.m;
+  const pct = x => (x*100).toFixed(0) + '%';
+  openModal({
+    title:'📊 Статистика государства',
+    body:`
+      <h3>Основное</h3>
+      <div class="kv"><span>📅 Месяц правления</span><span>${game.turn}</span></div>
+      <div class="kv"><span>👥 Население</span><span>${fmtFull(game.population)} / ${fmtFull(f.capacity)}</span></div>
+      <div class="kv"><span>💰 Казна</span><span style="color:${game.money<0?'var(--red)':'var(--green)'}">${fmtFull(game.money)} ₽</span></div>
+      <div class="kv"><span>😊 Доверие</span><span>${Math.round(game.trust)}%</span></div>
+      <div class="kv"><span>🌍 Репутация</span><span>${Math.round(game.reputation)}</span></div>
+      <div class="kv"><span>⚖️ Коррупция</span><span>${game.corruption.toFixed(1)}%</span></div>
+      <div class="kv"><span>📺 СМИ</span><span>${game.mediaLevel}</span></div>
+      <div class="kv"><span>💰 Налог</span><span>${game.taxRate}%</span></div>
+      <h3>Армия</h3>
+      <div class="kv"><span>👤 Солдаты</span><span>${fmtFull(game.army.soldiers)}</span></div>
+      <div class="kv"><span>🛡️ Танки</span><span>${fmtFull(game.army.tanks)}</span></div>
+      <div class="kv"><span>✈️ Самолёты</span><span>${fmtFull(game.army.planes)}</span></div>
+      <div class="kv"><span>🚀 Ракеты</span><span>${fmtFull(game.army.missiles)}</span></div>
+      <div class="kv"><span>⚔️ Военная мощь</span><span style="color:var(--purple)">${fmtFull(militaryPower())}</span></div>
+      <h3>Экономика (в месяц)</h3>
+      <div class="kv"><span>🌾 Еда</span><span style="color:var(--green)">+${Math.round(f.food)}</span></div>
+      <div class="kv"><span>🍽️ Потребление</span><span style="color:var(--red)">−${Math.round(f.foodNeed)}</span></div>
+      <div class="kv"><span>🪵 Материалы</span><span style="color:var(--green)">+${Math.round(f.materials)}</span></div>
+      <div class="kv"><span>⚡ Энергия</span><span style="color:var(--green)">+${Math.round(f.energy)}</span></div>
+      <div class="kv"><span>💰 Налоги</span><span style="color:var(--green)">+${fmtFull(f.taxIncome*(1-game.corruption/100))}</span></div>
+      <div class="kv"><span>🏳️ Дань</span><span style="color:var(--green)">+${fmtFull(f.tribute)}</span></div>
+      <div class="kv"><span>🎖️ Армия</span><span style="color:var(--red)">−${fmtFull(f.armyUpkeep)}</span></div>
+      <h3>Множители</h3>
+      <div class="kv"><span>Производство</span><span>${pct(m.prodMult)}</span></div>
+      <div class="kv"><span>Еда</span><span>${pct(m.foodMult)}</span></div>
+      <div class="kv"><span>Энергия</span><span>${pct(m.energyMult)}</span></div>
+      <div class="kv"><span>Население</span><span>${pct(m.popMult)}</span></div>
+      <div class="kv"><span>Налоги</span><span>${pct(m.taxMult)}</span></div>
+      <h3>Постройки</h3>
+      <div>${Object.keys(BUILDINGS).map(k=>c[k]?`<span class="tag on">${BUILDINGS[k].icon} ${BUILDINGS[k].name}: ${c[k]}</span>`:'').join('') || '<span class="muted small">Ничего не построено</span>'}</div>
+      <h3>Внешняя политика</h3>
+      <div>${game.captured.length ? game.captured.map(id=>{
+        const ct = COUNTRIES.find(x=>x.id===id);
+        return `<span class="tag on">${ct.flag} ${ct.name}</span>`;
+      }).join('') : '<span class="muted small">Нет захваченных стран</span>'}</div>
+      <h3>Войны</h3>
+      <div class="kv"><span>Побед</span><span style="color:var(--green)">${game.stats.warsWon}</span></div>
+      <div class="kv"><span>Поражений</span><span style="color:var(--red)">${game.stats.warsLost}</span></div>
+      <hr><div class="notice"><b>Условия победы:</b><br>
+        👥 Население > 10 000<br>
+        😊 Доверие > 80%<br>
+        🌍 Репутация > 80<br>
+        ⚔️ Захвачено стран: ${game.captured.length} / 2</div>`,
+    actions:`<button class="abtn danger" onclick="if(confirm('Начать заново? Прогресс будет потерян.'))restartGame()">Начать заново</button>
+             <button class="abtn" onclick="closeModal()">Закрыть</button>`
+  });
+}
+
+/* ---------- События ---------- */
+function showEvent(ev){
+  const choicesHtml = ev.choices.map((ch, idx)=>`
+    <button class="opt" onclick="applyEventChoice('${ev.id}', ${idx})">
+      <span class="opt-t">${ch.t}</span><span class="opt-d">${ch.d}</span>
+    </button>`).join('');
+  openModal({
+    title: ev.title,
+    body:`<p style="margin-bottom:14px;">${ev.text}</p>${choicesHtml}`,
+    actions:'', closable:false
+  });
+}
+function applyEventChoice(evId, choiceIdx){
+  const ev = EVENTS.find(e=>e.id===evId);
+  if(!ev) return;
+  const choice = ev.choices[choiceIdx];
+  if(!choice) return;
+  choice.fn(game);
+  game.trust = clamp(game.trust, 0, 100);
+  game.reputation = clamp(game.reputation, 0, 100);
+  game.corruption = clamp(game.corruption, 0, 60);
+  game.population = Math.max(0, game.population);
+  game.money = Math.round(game.money);
+  addLog(`Событие: ${ev.title} → ${choice.t}`, 'warn');
+  save(); closeModal(); render(); checkEnd();
+}
+
+/* ---------- Запуск ---------- */
+function init(){
+  const loaded = load();
+  if(!loaded){
+    newGame();
+    // Приветственное окно с подсказкой
+    setTimeout(()=>{
+      openModal({
+        title:'👋 Добро пожаловать, господин Президент',
+        body:`
+          <p>Вы возглавили молодую страну с <b>1 000 000 ₽</b> в казне, но <b>без единого жителя</b>.</p>
+          <div class="notice warn">
+            <b>С чего начать:</b><br>
+            1. Постройте <b>🏠 Дом</b> — придут первые жители.<br>
+            2. Постройте <b>🌾 Ферму</b> — люди должны есть.<br>
+            3. Затем <b>⚡ Электростанцию</b> и <b>🪵 Лесопилку</b> — для заводов.<br>
+            4. <b>🏭 Завод</b> даёт доход, а <b>🎖️ Казармы</b> — армию для войн.
+          </div>
+          <p class="small muted">Победа: население > 10 000, доверие и репутация > 80, захватить 2+ страны.
+          Война возможна только с сильной армией.</p>`,
+        actions:`<button class="abtn primary" onclick="closeModal()">Начать правление</button>`
+      });
+    }, 200);
+  } else if(game.gameOver){
+    const layer = document.getElementById('modalLayer');
+    layer.innerHTML = `
+      <div class="modal-backdrop"></div>
+      <div class="modal">
+        <h2>👋 С возвращением</h2>
+        <div class="modal-body">
+          <p>Предыдущая игра завершена.</p>
+          <div class="kv"><span>Итог</span><span>${game.winFlag?'🏆 Победа':'💀 Поражение'}</span></div>
+          <div class="kv"><span>Ходов</span><span>${game.turn}</span></div>
+        </div>
+        <div class="modal-actions"><button class="abtn primary" onclick="restartGame()">Новая игра</button></div>
+      </div>`;
+    layer.classList.add('active');
+  }
+  render();
+  window.addEventListener('beforeunload', save);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Number Tycoon v5</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Courier New',monospace;background:radial-gradient(circle at 50% 0%,#1a1a3e 0%,#0a0a1e 60%);color:#fff;min-height:100vh;overflow-x:hidden;padding:12px;padding-bottom:100px}
+.header{text-align:center;margin-bottom:10px}
+.title{font-size:20px;font-weight:bold;letter-spacing:1px;background:linear-gradient(90deg,#e94560,#ff8c42,#e94560);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{font-size:11px;color:#7a7a9e;margin-top:2px}
+.market{text-align:center;font-size:12px;padding:6px;margin:8px 0;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:8px;color:#4CAF50}
+.market.down{background:rgba(244,67,54,0.1);border-color:rgba(244,67,54,0.3);color:#F44336}
+.market.up{background:rgba(76,175,80,0.15);border-color:rgba(76,175,80,0.5);color:#4CAF50}
+.money{text-align:center;font-size:26px;font-weight:bold;color:#FFD700;text-shadow:0 0 15px rgba(255,215,0,0.6);margin:8px 0}
+.stats{text-align:center;font-size:11px;color:#7a7a9e;line-height:1.6;margin-bottom:12px}
+.btn{width:100%;padding:16px;border:none;border-radius:12px;font-family:inherit;font-size:16px;font-weight:bold;color:#fff;cursor:pointer;transition:all .15s;box-shadow:0 4px 0 rgba(0,0,0,0.3)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,0.3)}
+.btn:disabled{opacity:.4}
+.btn-generate{background:linear-gradient(135deg,#e94560,#c2264a);margin-bottom:8px}
+.btn-custom{background:linear-gradient(135deg,#FF9800,#E65100);margin-bottom:12px}
+.btn-sell{background:linear-gradient(135deg,#4CAF50,#2e7d32)}
+.btn-keep{background:linear-gradient(135deg,#2196F3,#0d47a1)}
+.btn-skip{background:linear-gradient(135deg,#555,#333)}
+.card{background:linear-gradient(135deg,#1a1a2e,#0f0f1e);border:2px solid #333;border-radius:16px;padding:18px;margin-bottom:12px;animation:appear .3s ease-out}
+@keyframes appear{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.card.rarity-trash{border-color:#6E6E6E}
+.card.rarity-common{border-color:#B0BEC5}
+.card.rarity-uncommon{border-color:#4CAF50;box-shadow:0 0 20px rgba(76,175,80,.5)}
+.card.rarity-rare{border-color:#2196F3;box-shadow:0 0 25px rgba(33,150,243,.6)}
+.card.rarity-epic{border-color:#9C27B0;box-shadow:0 0 30px rgba(156,39,176,.7)}
+.card.rarity-legendary{border-color:#FF9800;box-shadow:0 0 35px rgba(255,152,0,.8);animation:pulse-gold 1.5s infinite alternate}
+.card.rarity-mythic{border-color:#F44336;box-shadow:0 0 40px rgba(244,67,54,.9);animation:pulse-red 1s infinite alternate}
+.card.rarity-godlike{border-color:#FFD700;box-shadow:0 0 50px rgba(255,215,0,1);animation:pulse-god .8s infinite alternate}
+.card.rarity-ultra{border-color:#00E5FF;box-shadow:0 0 60px rgba(0,229,255,1);animation:pulse-ultra .6s infinite alternate}
+@keyframes pulse-gold{from{box-shadow:0 0 35px rgba(255,152,0,.8)}to{box-shadow:0 0 50px rgba(255,152,0,1)}}
+@keyframes pulse-red{from{box-shadow:0 0 40px rgba(244,67,54,.9)}to{box-shadow:0 0 60px rgba(244,67,54,1)}}
+@keyframes pulse-god{from{box-shadow:0 0 50px rgba(255,215,0,1)}to{box-shadow:0 0 70px rgba(255,215,0,1)}}
+@keyframes pulse-ultra{from{box-shadow:0 0 60px rgba(0,229,255,1)}to{box-shadow:0 0 90px rgba(0,229,255,1)}}
+.rarity-bar{height:6px;border-radius:3px;margin-bottom:12px}
+.num-text{font-size:20px;font-weight:bold;text-align:center;letter-spacing:1px;margin-bottom:10px;word-break:break-all;font-family:monospace}
+.meta{display:flex;justify-content:center;gap:10px;font-size:13px;font-weight:bold;margin-bottom:10px;flex-wrap:wrap}
+.price-text{color:#FFD700}
+.tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.tag{padding:3px 9px;border-radius:20px;font-size:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2)}
+.actions{display:flex;gap:6px;margin-top:10px}
+.actions .btn{padding:14px 8px;font-size:13px}
+.tabs{display:flex;gap:6px;margin:14px 0 10px;flex-wrap:wrap}
+.tab{flex:1;min-width:70px;padding:10px 6px;border:none;border-radius:10px;font-family:inherit;font-weight:bold;font-size:11px;color:#fff;cursor:pointer;background:#222}
+.tab.active{background:linear-gradient(135deg,#9C27B0,#6a1b9a)}
+.tab.inv.active{background:linear-gradient(135deg,#2196F3,#0d47a1)}
+.tab.promo.active{background:linear-gradient(135deg,#FF9800,#E65100)}
+.section{display:none}
+.section.active{display:block}
+.upgrade-card{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:10px}
+.up-name{font-weight:bold;font-size:15px;margin-bottom:3px}
+.up-desc{font-size:11px;color:#7a7a9e;margin-bottom:8px}
+.up-row{display:flex;align-items:center;gap:8px}
+.up-level{flex:1;color:#e94560;font-weight:bold;font-size:13px}
+.up-buy{padding:8px 14px;border:none;border-radius:8px;background:linear-gradient(135deg,#4CAF50,#2e7d32);color:#fff;font-family:inherit;font-weight:bold;font-size:12px;cursor:pointer}
+.up-buy:disabled{opacity:.4}
+.inv-item{margin-bottom:10px}
+.inv-item .card{margin-bottom:0;padding:14px}
+.inv-item .num-text{font-size:15px;margin-bottom:8px}
+.inv-sell{width:100%;padding:12px;margin-top:6px;border:none;border-radius:10px;background:linear-gradient(135deg,#4CAF50,#2e7d32);color:#fff;font-family:inherit;font-weight:bold;font-size:13px;cursor:pointer}
+.empty{text-align:center;color:#555;padding:40px 20px;font-size:13px}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(200px);background:rgba(0,0,0,.95);color:#fff;padding:14px 24px;border-radius:30px;border:2px solid #e94560;font-weight:bold;z-index:9999;font-size:14px;transition:transform .3s;max-width:90%;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:#4CAF50}
+.toast.error{border-color:#F44336}
+.admin-fab{position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#e94560,#6a1b9a);border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 4px 20px rgba(233,69,96,.5);z-index:100}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;z-index:9997;padding:20px;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:linear-gradient(135deg,#1a1a2e,#0f0f1e);border:2px solid #FF9800;border-radius:16px;padding:20px;max-width:450px;width:100%;max-height:85vh;overflow-y:auto}
+.modal-title{color:#FF9800;font-size:18px;text-align:center;margin-bottom:14px}
+.modal-hint{font-size:11px;color:#7a7a9e;text-align:center;margin-bottom:10px}
+.full-number-input{width:100%;padding:16px;margin-bottom:10px;background:#101020;border:2px solid #00E5FF;border-radius:12px;color:#fff;font-family:monospace;font-size:20px;text-align:center;letter-spacing:2px;font-weight:bold;box-sizing:border-box}
+.full-number-input:focus{outline:none;border-color:#FFD700;box-shadow:0 0 20px rgba(255,215,0,.5)}
+.quick-codes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.quick-code{padding:8px 12px;border:2px solid #333;border-radius:8px;background:#101020;color:#00E5FF;font-family:inherit;font-size:12px;font-weight:bold;cursor:pointer}
+.quick-code:hover{border-color:#FF9800;color:#FFB74D}
+.parsed-info{background:#101020;border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:12px}
+.info-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid #1a1a2e}
+.info-row:last-child{border-bottom:none}
+.info-label{color:#7a7a9e}
+.info-value{color:#00E5FF;font-weight:bold;font-family:monospace}
+.modal-btn{width:100%;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,#4CAF50,#2e7d32);color:#fff;font-weight:bold;font-family:inherit;font-size:15px;cursor:pointer;margin-bottom:8px}
+.modal-btn.cancel{background:linear-gradient(135deg,#555,#333)}
+.modal-price{text-align:center;color:#FFD700;font-size:15px;font-weight:bold;margin:10px 0}
+.admin-panel{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;z-index:9998;padding:20px;overflow-y:auto}
+.admin-panel.show{display:block}
+.admin-title{color:#e94560;font-size:20px;text-align:center;margin-bottom:16px}
+.admin-section{background:#1a1a2e;border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid #333}
+.admin-section h3{color:#00E5FF;font-size:14px;margin-bottom:10px}
+.admin-input{width:100%;padding:12px;margin-bottom:8px;background:#101020;border:1px solid #333;border-radius:8px;color:#00E5FF;font-family:monospace;font-size:14px;box-sizing:border-box}
+.admin-btn{width:100%;padding:12px;border:none;border-radius:8px;background:linear-gradient(135deg,#00E676,#00B248);color:#000;font-weight:bold;cursor:pointer;font-family:inherit;font-size:14px;margin-top:4px}
+.admin-btn.danger{background:linear-gradient(135deg,#e94560,#c2264a);color:#fff}
+.admin-close{position:absolute;top:16px;right:16px;background:#e94560;color:#fff;border:none;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer}
+.promo-input{width:100%;padding:16px;margin-bottom:10px;background:#101020;border:2px solid #9C27B0;border-radius:12px;color:#fff;font-family:monospace;font-size:16px;text-align:center;letter-spacing:2px;text-transform:uppercase;box-sizing:border-box}
+.promo-btn{width:100%;padding:16px;border:none;border-radius:12px;background:linear-gradient(135deg,#9C27B0,#6a1b9a);color:#fff;font-weight:bold;font-family:inherit;font-size:16px;cursor:pointer}
+.promo-item{background:#1a1a2e;border:1px solid #9C27B0;border-radius:10px;padding:12px;margin-bottom:8px}
+.promo-code{color:#FFD700;font-weight:bold;font-size:16px;font-family:monospace}
+.promo-desc{color:#aaa;font-size:11px;margin-top:4px}
+.promo-rewards{color:#4CAF50;font-size:12px;margin-top:6px}
+.recent{margin-top:14px;padding:10px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid #222}
+.recent-title{font-size:11px;color:#7a7a9e;margin-bottom:8px;letter-spacing:1px}
+.recent-item{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;font-size:11px;border-bottom:1px solid #1a1a2e}
+.recent-item:last-child{border-bottom:none}
+.quick-codes-list{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:6px;background:#0a0a1e;border-radius:8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="title">📱 NUMBER TYCOON v5.0</div>
+    <div class="subtitle">ПОЛНЫЙ ФИКС • ЛЮБОЙ НОМЕР • УМНАЯ ОЦЕНКА</div>
+</div>
+
+<div class="market" id="marketInfo">📊 Загрузка...</div>
+<div class="money" id="moneyDisplay">💰 500 ₽</div>
+<div class="stats" id="statsDisplay"></div>
+
+<button class="btn btn-generate" id="generateBtn" onclick="generate()">🎰 СГЕНЕРИРОВАТЬ СЛУЧАЙНЫЙ</button>
+<button class="btn btn-custom" onclick="openCustomNumber()">✍️ ВВЕСТИ СВОЙ НОМЕР</button>
+
+<div id="resultPanel"></div>
+
+<div class="tabs">
+    <button class="tab active" id="tabShop" onclick="showTab('shop')">🛒 МАГАЗИН</button>
+    <button class="tab inv" id="tabInv" onclick="showTab('inv')">📦 ИНВЕНТАРЬ</button>
+    <button class="tab promo" id="tabPromo" onclick="showTab('promo')">🎁 ПРОМО</button>
+</div>
+
+<div class="section active" id="sectionShop"></div>
+<div class="section" id="sectionInv"></div>
+<div class="section" id="sectionPromo">
+    <div class="card" style="border-color:#9C27B0;">
+        <div style="text-align:center;color:#9C27B0;font-weight:bold;margin-bottom:12px;font-size:14px;">🎁 АКТИВАЦИЯ ПРОМОКОДА</div>
+        <input type="text" class="promo-input" id="promoInput" placeholder="ВВЕДИ КОД" maxlength="20">
+        <button class="promo-btn" onclick="activatePromo()">✨ АКТИВИРОВАТЬ</button>
+    </div>
+    <div id="myPromos"></div>
+</div>
+
+<div class="recent" id="recentPanel" style="display:none;">
+    <div class="recent-title">📜 ПОСЛЕДНИЕ ПРОДАЖИ</div>
+    <div id="recentList"></div>
+</div>
+
+<button class="admin-fab" onclick="openAdmin()">🔧</button>
+
+<div class="modal-overlay" id="customModal">
+    <div class="modal-box">
+        <div class="modal-title">✍️ ВВЕДИ ЛЮБОЙ НОМЕР</div>
+        <div class="modal-hint">Пиши как хочешь: +8888888, +375339008522, 79991234567</div>
+        
+        <input type="tel" class="full-number-input" id="customNumberInput" placeholder="+8888888" maxlength="20" autocomplete="off">
+        
+        <div class="modal-hint" style="margin-top:10px;">⚡ Быстрые:</div>
+        <div class="quick-codes" id="quickCodes"></div>
+        
+        <div class="parsed-info" id="parsedInfo">
+            <div class="info-row"><span class="info-label">Как будет:</span><span class="info-value" id="parsedFull">—</span></div>
+            <div class="info-row"><span class="info-label">Страна:</span><span class="info-value" id="parsedCountry">—</span></div>
+            <div class="info-row"><span class="info-label">Цифр:</span><span class="info-value" id="parsedLen">—</span></div>
+        </div>
+        
+        <div class="modal-price" id="customPrice">💰 Введи номер</div>
+        <button class="modal-btn" onclick="submitCustomNumber()">🎯 ОЦЕНИТЬ И ПОЛУЧИТЬ</button>
+        <button class="modal-btn cancel" onclick="closeCustomNumber()">Отмена</button>
+    </div>
+</div>
+
+<div class="admin-panel" id="adminPanel">
+    <button class="admin-close" onclick="closeAdmin()">✕</button>
+    <div class="admin-title">🔧 АДМИН-ПАНЕЛЬ</div>
+    
+    <div class="admin-section">
+        <h3>💰 Деньги</h3>
+        <input type="number" class="admin-input" id="adminMoney" placeholder="Сумма">
+        <button class="admin-btn" onclick="adminAddMoney()">Добавить</button>
+        <button class="admin-btn" onclick="adminSetMoney()" style="margin-top:6px;">Установить</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+            <button class="admin-btn" onclick="adminGiveCustomValue(50)">+50K</button>
+            <button class="admin-btn" onclick="adminGiveCustomValue(500)">+500K</button>
+            <button class="admin-btn" onclick="adminGiveCustomValue(5000)">+5M</button>
+        </div>
+    </div>
+    
+    <div class="admin-section">
+        <h3>✍️ Выдать номер</h3>
+        <input type="tel" class="admin-input" id="adminCustomNum" placeholder="+8888888">
+        <button class="admin-btn" onclick="adminGiveCustom()">Выдать</button>
+        <button class="admin-btn" onclick="adminGiveGodlike()" style="margin-top:6px;">👑 GODLIKE</button>
+        <button class="admin-btn" onclick="adminGiveUltra()" style="margin-top:6px;">💎 ULTRA</button>
+    </div>
+    
+    <div class="admin-section">
+        <h3>🎁 Создание промокода</h3>
+        <input type="text" class="admin-input" id="promoNewCode" placeholder="КОД" maxlength="20">
+        <input type="number" class="admin-input" id="promoNewMoney" placeholder="Деньги">
+        <input type="number" class="admin-input" id="promoNewScans" placeholder="+Сканер">
+        <input type="number" class="admin-input" id="promoNewLuck" placeholder="+Удача">
+        <input type="number" class="admin-input" id="promoNewMulti" placeholder="+Множитель">
+        <input type="number" class="admin-input" id="promoNewUses" placeholder="Макс. активаций">
+        <button class="admin-btn" onclick="adminCreatePromo()">Создать</button>
+    </div>
+    
+    <div class="admin-section">
+        <h3>📋 Промокоды</h3>
+        <div id="adminPromoList"></div>
+    </div>
+    
+    <div class="admin-section">
+        <h3>⭐ Прокачка</h3>
+        <input type="number" class="admin-input" id="adminLuck" placeholder="Удача (0-100)">
+        <input type="number" class="admin-input" id="adminPattern" placeholder="Паттерны (0-100)">
+        <input type="number" class="admin-input" id="adminScanner" placeholder="Сканер (1-100)">
+        <input type="number" class="admin-input" id="adminRep" placeholder="Репутация (0-50)">
+        <input type="number" class="admin-input" id="adminInvSlots" placeholder="Вместимость инвентаря (0-100)">
+        <input type="number" class="admin-input" id="adminSpeed" placeholder="Скорость (0-20)">
+        <input type="number" class="admin-input" id="adminMulti" placeholder="Множитель (1-50)">
+        <input type="number" class="admin-input" id="adminAuto" placeholder="Автоген (0-20)">
+        <input type="number" class="admin-input" id="adminRareChance" placeholder="Шанс редких (0-100)">
+        <input type="number" class="admin-input" id="adminCombo" placeholder="Комбо-мастер (0-30)">
+        <input type="number" class="admin-input" id="adminMega" placeholder="Мега-продажа (0-20)">
+        <input type="number" class="admin-input" id="adminBulk" placeholder="Оптовая продажа (0-20)">
+        <button class="admin-btn" onclick="adminSetUpgrades()">Применить</button>
+        <button class="admin-btn" onclick="adminMaxEverything()" style="margin-top:6px;">⚡ МАКС ВСЁ</button>
+    </div>
+    
+    <div class="admin-section">
+        <h3>⚙️ Управление</h3>
+        <button class="admin-btn danger" onclick="adminReset()">СБРОСИТЬ ИГРУ</button>
+        <button class="admin-btn danger" onclick="adminClearInv()" style="margin-top:6px;">Очистить инвентарь</button>
+        <button class="admin-btn" onclick="adminToggleFreeze()" style="margin-top:6px;">Заморозка: <span id="freezeState">OFF</span></button>
+        <button class="admin-btn" onclick="adminExportSave()" style="margin-top:6px;">📤 Экспорт</button>
+        <button class="admin-btn" onclick="adminImportSave()" style="margin-top:6px;">📥 Импорт</button>
+    </div>
+    
+    <div class="admin-section">
+        <h3>📊 Статистика</h3>
+        <div id="adminStats" style="color:#00E5FF;font-size:12px;line-height:1.8;"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== АДМИН ПАРОЛЬ =====
+const ADMIN_PASSWORD = "14886756";
+
+// ===== СПРАВОЧНИК СТРАН =====
+const COUNTRY_CODES = {
+    '1':{f:'🇺🇸',n:'США/Канада'},'7':{f:'🇷🇺',n:'Россия'},'20':{f:'🇪🇬',n:'Египет'},
+    '27':{f:'🇿🇦',n:'ЮАР'},'30':{f:'🇬🇷',n:'Греция'},'31':{f:'🇳🇱',n:'Нидерланды'},
+    '32':{f:'🇧🇪',n:'Бельгия'},'33':{f:'🇫🇷',n:'Франция'},'34':{f:'🇪🇸',n:'Испания'},
+    '36':{f:'🇭🇺',n:'Венгрия'},'39':{f:'🇮🇹',n:'Италия'},'40':{f:'🇷🇴',n:'Румыния'},
+    '41':{f:'🇨🇭',n:'Швейцария'},'43':{f:'🇦🇹',n:'Австрия'},'44':{f:'🇬🇧',n:'UK'},
+    '45':{f:'🇩🇰',n:'Дания'},'46':{f:'🇸🇪',n:'Швеция'},'47':{f:'🇳🇴',n:'Норвегия'},
+    '48':{f:'🇵🇱',n:'Польша'},'49':{f:'🇩🇪',n:'Германия'},'51':{f:'🇵🇪',n:'Перу'},
+    '52':{f:'🇲🇽',n:'Мексика'},'54':{f:'🇦🇷',n:'Аргентина'},'55':{f:'🇧🇷',n:'Бразилия'},
+    '56':{f:'🇨🇱',n:'Чили'},'57':{f:'🇨🇴',n:'Колумбия'},'58':{f:'🇻🇪',n:'Венесуэла'},
+    '60':{f:'🇲🇾',n:'Малайзия'},'61':{f:'🇦🇺',n:'Австралия'},'62':{f:'🇮🇩',n:'Индонезия'},
+    '63':{f:'🇵🇭',n:'Филиппины'},'64':{f:'🇳🇿',n:'Новая Зеландия'},'65':{f:'🇸🇬',n:'Сингапур'},
+    '66':{f:'🇹🇭',n:'Таиланд'},'77':{f:'🇰🇿',n:'Казахстан'},'81':{f:'🇯🇵',n:'Япония'},
+    '82':{f:'🇰🇷',n:'Корея'},'84':{f:'🇻🇳',n:'Вьетнам'},'86':{f:'🇨🇳',n:'Китай'},
+    '90':{f:'🇹🇷',n:'Турция'},'91':{f:'🇮🇳',n:'Индия'},'92':{f:'🇵🇰',n:'Пакистан'},
+    '234':{f:'🇳🇬',n:'Нигерия'},'254':{f:'🇰🇪',n:'Кения'},'351':{f:'🇵🇹',n:'Португалия'},
+    '353':{f:'🇮🇪',n:'Ирландия'},'358':{f:'🇫🇮',n:'Финляндия'},'359':{f:'🇧🇬',n:'Болгария'},
+    '370':{f:'🇱🇹',n:'Литва'},'371':{f:'🇱🇻',n:'Латвия'},'372':{f:'🇪🇪',n:'Эстония'},
+    '373':{f:'🇲🇩',n:'Молдова'},'374':{f:'🇦🇲',n:'Армения'},'375':{f:'🇧🇾',n:'Беларусь'},
+    '380':{f:'🇺🇦',n:'Украина'},'381':{f:'🇷🇸',n:'Сербия'},'385':{f:'🇭🇷',n:'Хорватия'},
+    '420':{f:'🇨🇿',n:'Чехия'},'880':{f:'🇧🇩',n:'Бангладеш'},'966':{f:'🇸🇦',n:'Саудовская'},
+    '971':{f:'🇦🇪',n:'ОАЭ'},'972':{f:'🇮🇱',n:'Израиль'},'994':{f:'🇦🇿',n:'Азербайджан'},
+    '995':{f:'🇬🇪',n:'Грузия'},'998':{f:'🇺🇿',n:'Узбекистан'}
+};
+
+const RARITIES = {
+    trash:{name:'Мусор',color:'#6E6E6E',mult:.5,cls:'rarity-trash'},
+    common:{name:'Обычный',color:'#B0BEC5',mult:1,cls:'rarity-common'},
+    uncommon:{name:'Необычный',color:'#4CAF50',mult:2.5,cls:'rarity-uncommon'},
+    rare:{name:'Редкий',color:'#2196F3',mult:6,cls:'rarity-rare'},
+    epic:{name:'Эпический',color:'#9C27B0',mult:15,cls:'rarity-epic'},
+    legendary:{name:'Легендарный',color:'#FF9800',mult:40,cls:'rarity-legendary'},
+    mythic:{name:'Мифический',color:'#F44336',mult:100,cls:'rarity-mythic'},
+    godlike:{name:'Божественный',color:'#FFD700',mult:300,cls:'rarity-godlike'},
+    ultra:{name:'УЛЬТРА',color:'#00E5FF',mult:1000,cls:'rarity-ultra'}
+};
+
+const DEFAULT_PROMOS = [
+    {code:'START',money:5000,scans:0,luck:0,multi:0,uses:0,usedBy:[]},
+    {code:'TYCOON',money:100000,scans:5,luck:5,multi:0,uses:100,usedBy:[]},
+    {code:'ULTRA2024',money:1000000,scans:10,luck:10,multi:1,uses:50,usedBy:[]}
+];
+
+let player = {
+    money:500,luck:0,pattern:0,scanner:1,reputation:0,
+    speed:0,multiplier:1,autoGen:0,rareChance:0,dailyBonus:0,
+    comboMaster:0,megaSale:0,bulkSell:0,inventorySlots:0,
+    inventory:[],soldHistory:[],
+    numbersGenerated:0,numbersSold:0,bestScore:0,totalEarned:0,
+    balanceFrozen:false,customNumbers:0,
+    claimedPromos:[],playerId:null
+};
+
+let promos = [...DEFAULT_PROMOS];
+let currentNumber = null;
+let generateCount = 0;
+let autoGenInterval = null;
+let comboCount = 0;
+
+// ===== СОХРАНЕНИЕ =====
+function save() {
+    try {
+        localStorage.setItem('nt_save', JSON.stringify(player));
+        localStorage.setItem('nt_genCount', String(generateCount));
+        localStorage.setItem('nt_promos', JSON.stringify(promos));
+    } catch(e){}
+}
+function load() {
+    try {
+        var s = localStorage.getItem('nt_save');
+        if (s) { var p = JSON.parse(s); for (var k in p) player[k] = p[k]; }
+        var g = localStorage.getItem('nt_genCount');
+        if (g) generateCount = parseInt(g) || 0;
+        var pr = localStorage.getItem('nt_promos');
+        if (pr) promos = JSON.parse(pr);
+        if (!player.playerId) player.playerId = 'p_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+    } catch(e){}
+}
+
+// ===== УТИЛИТЫ =====
+function random(min,max) { return Math.floor(Math.random()*(max-min+1))+min; }
+function formatMoney(m) {
+    m = Math.floor(m);
+    if (m >= 1e12) return (m/1e12).toFixed(2)+'T';
+    if (m >= 1e9) return (m/1e9).toFixed(2)+'B';
+    if (m >= 1e6) return (m/1e6).toFixed(2)+'M';
+    if (m >= 1e3) return (m/1e3).toFixed(1)+'K';
+    return m.toString();
+}
+
+// ===== ПАРСИНГ НОМЕРА (ГЛАВНЫЙ ФИКС) =====
+function parsePhoneNumber(input) {
+    let raw = (input||'').trim();
+    if (!raw) return null;
+    
+    let digits = raw.replace(/\D/g,'');
+    if (digits.length < 3) return null;
+    
+    // Ищем известный код страны (для отображения флага)
+    let country = null, codeLen = 0;
+    for (let len = 4; len >= 1; len--) {
+        if (digits.length < len) continue;
+        const test = digits.substring(0, len);
+        if (COUNTRY_CODES[test]) { country = COUNTRY_CODES[test]; codeLen = len; break; }
+    }
+    
+    let displayCode, flag, countryName;
+    if (country) {
+        displayCode = '+' + digits.substring(0, codeLen);
+        flag = country.f;
+        countryName = country.f + ' ' + country.n;
+    } else {
+        // Неизвестный — показываем как есть
+        displayCode = '+';
+        flag = '🌐';
+        countryName = '🌐 Любой код';
+    }
+    
+    return {
+        code: displayCode,
+        flag: flag,
+        countryName: countryName,
+        // КЛЮЧЕВОЕ: все цифры как есть
+        fullDigits: digits,
+        numberOnly: digits,   // для оценки используем все цифры
+        known: !!country,
+        displayFull: '+' + digits
+    };
+}
+
+// ===== ОЦЕНКА (по всем цифрам) =====
+function evaluate(num) {
+    if (num.evaluated) return num;
+    const d = num.numberOnly || num.fullDigits || '';
+    
+    if (!d || d.length < 2) {
+        num.score = 0;
+        num.rarity = RARITIES.trash;
+        num.tags = ['❌ Слишком короткий'];
+        num.finalPrice = 0;
+        num.evaluated = true;
+        return num;
+    }
+    
+    let score = 0;
+    const tags = [];
+    
+    // 1. Все одинаковые
+    if (d.split('').every(c => c === d[0])) { score += 100; tags.push('🔥 ВСЕ ОДИНАКОВЫЕ'); }
+    
+    // 2. Много семёрок
+    const sevens = (d.match(/7/g)||[]).length;
+    if (sevens >= 7) { score += 40; tags.push('7️⃣ Семёрок: '+sevens); }
+    else if (sevens >= 5) { score += 25; tags.push('7️⃣ Семёрок: '+sevens); }
+    else if (sevens >= 3) { score += 10; tags.push('7️⃣ Семёрок: '+sevens); }
+    
+    // 3. Палиндром
+    if (d.length > 3 && d === d.split('').reverse().join('')) { score += 35; tags.push('🔄 Палиндром'); }
+    
+    // 4. Последовательность
+    let asc = true, desc = true;
+    for (let i = 1; i < d.length; i++) {
+        const p = +d[i-1], c = +d[i];
+        if (c !== (p+1)%10) asc = false;
+        if (c !== (p+9)%10) desc = false;
+    }
+    if (d.length > 3 && (asc || desc)) { score += 40; tags.push('📈 Последовательность'); }
+    
+    // 5. Уникальные цифры
+    const unique = new Set(d.split('')).size;
+    if (unique === 2) { score += 35; tags.push('🎨 2 цифры'); }
+    else if (unique === 3) { score += 20; tags.push('🎨 3 цифры'); }
+    else if (unique === 4) { score += 10; tags.push('🎨 4 цифры'); }
+    else if (unique === 5) { score += 3; }
+    
+    // 6. Парный узор
+    let pairOk = d.length >= 4;
+    for (let i = 0; i < d.length-1; i += 2) { if (d[i] !== d[i+1]) { pairOk = false; break; } }
+    if (pairOk) { score += 25; tags.push('👯 Парный узор'); }
+    
+    // 7. Тройной повтор
+    let tripleOk = d.length >= 6;
+    for (let i = 0; i < d.length-2; i += 3) {
+        if (d[i] !== d[i+1] || d[i+1] !== d[i+2]) { tripleOk = false; break; }
+    }
+    if (tripleOk) { score += 40; tags.push('🎯 Тройной повтор'); }
+    
+    // 8. Повторяющийся блок
+    for (let len = 2; len <= d.length/2; len++) {
+        const block = d.slice(0, len);
+        let s = '';
+        while (s.length < d.length) s += block;
+        if (s === d && len < d.length) { score += 35; tags.push('🔁 Повтор x'+Math.floor(d.length/len)); break; }
+    }
+    
+    // 9. Зеркало
+    for (let len = 2; len <= d.length/2; len++) {
+        const left = d.slice(0, len);
+        const right = d.slice(d.length-len);
+        if (left === right.split('').reverse().join('') && len < d.length) {
+            if (!tags.some(t => t.includes('Палиндром'))) { score += 20; tags.push('🪞 Зеркальный'); }
+            break;
+        }
+    }
+    
+    // 10. Красивое окончание
+    if (d.length >= 4) {
+        const last4 = d.slice(-4);
+        if (['0000','1111','2222','3333','4444','5555','6666','7777','8888','9999'].includes(last4)) {
+            score += 25; tags.push('✨ '+last4);
+        } else if (['1234','4321','5678','8765'].includes(last4)) {
+            score += 20; tags.push('✨ Ряд '+last4);
+        }
+    }
+    
+    // 11. Красивое начало
+    if (d.length >= 4) {
+        const first4 = d.slice(0,4);
+        if (['0000','1111','2222','3333','4444','5555','6666','7777','8888','9999'].includes(first4)) {
+            score += 20; tags.push('🎬 '+first4);
+        }
+    }
+    
+    // 12. Счастливые комбо
+    if (d.includes('777')) score += 8;
+    if (d.includes('888')) score += 8;
+    if (d.includes('666')) { score += 12; tags.push('😈 666'); }
+    if (d.includes('000')) { score += 5; tags.push('💠 000'); }
+    if (d.includes('9999')) { score += 15; tags.push('💎 9999'); }
+    if (d.includes('1234')) { score += 10; tags.push('🔢 1234'); }
+    if (d.includes('123456')) { score += 25; tags.push('🔢 123456'); }
+    if (d.includes('654321')) { score += 25; tags.push('🔢 654321'); }
+    
+    // 13. Значимые
+    if (d.includes('2024') || d.includes('2025')) { score += 15; tags.push('📅 Год'); }
+    if (d.includes('007')) { score += 20; tags.push('🕵️ 007'); }
+    if (d.includes('911')) { score += 25; tags.push('🚨 911'); }
+    
+    // 14. Комбо 7+8
+    const eights = (d.match(/8/g)||[]).length;
+    if (eights >= 5 && sevens >= 5) { score += 30; tags.push('💫 7+8'); }
+    
+    // 15. Идеальный повтор
+    if (d.length >= 4) {
+        const half = d.slice(0, Math.floor(d.length/2));
+        const half2 = d.slice(Math.ceil(d.length/2));
+        if (half === half2 && half.length > 1) { score += 30; tags.push('🎪 Идеальный повтор'); }
+    }
+    
+    // 16. ABAB
+    if (d.length >= 4 && d[0] !== d[1]) {
+        let ababOk = true;
+        for (let i = 0; i < d.length; i++) {
+            const expected = (i % 2 === 0) ? d[0] : d[1];
+            if (d[i] !== expected) { ababOk = false; break; }
+        }
+        if (ababOk) { score += 20; tags.push('🔀 ABAB'); }
+    }
+    
+    // Бонусы от прокачки
+    score += Math.floor((player.luck||0) * 0.3);
+    score += Math.floor((player.rareChance||0) / 10);
+    
+    // Бонус за длину
+    if (d.length >= 12) { score += 20; tags.push('📏 Длинный'); }
+    else if (d.length >= 10) { score += 10; }
+    
+    // Бонус за неизвестный код
+    if (num.known === false) { score += 10; tags.push('🌐 Редкий код'); }
+    
+    score = Math.min(100, score);
+    
+    // Редкость
+    let rarity;
+    if (score >= 98) rarity = RARITIES.ultra;
+    else if (score >= 90) rarity = RARITIES.godlike;
+    else if (score >= 75) rarity = RARITIES.mythic;
+    else if (score >= 60) rarity = RARITIES.legendary;
+    else if (score >= 45) rarity = RARITIES.epic;
+    else if (score >= 30) rarity = RARITIES.rare;
+    else if (score >= 18) rarity = RARITIES.uncommon;
+    else if (score >= 8) rarity = RARITIES.common;
+    else rarity = RARITIES.trash;
+    
+    // Цена
+    let price = 100 * rarity.mult;
+    price += (d.length - 8) * 200;
+    price *= (1 + tags.length * 0.25);
+    price += score * 50;
+    if (num.known === false) price *= 1.5;
+    
+    num.score = score;
+    num.rarity = rarity;
+    num.tags = tags;
+    num.basePrice = Math.floor(price);
+    num.finalPrice = Math.floor(price * (1 + (player.scanner||1) * 0.5));
+    num.evaluated = true;
+    return num;
+}
+
+// ===== РЫНОК =====
+let marketPhase = 0;
+setInterval(() => { marketPhase = (marketPhase+1)%60; updateMarket(); }, 2000);
+
+function getMarketMultiplier() {
+    if (marketPhase < 20) return 1.2;
+    if (marketPhase < 40) return 1.0;
+    return 0.9;
+}
+function updateMarket() {
+    const el = document.getElementById('marketInfo');
+    if (!el) return;
+    const mult = getMarketMultiplier();
+    el.classList.remove('up','down');
+    if (mult > 1) { el.textContent = '📈 Рынок растёт (+20%)'; el.classList.add('up'); }
+    else if (mult < 1) { el.textContent = '📉 Рынок падает (-10%)'; el.classList.add('down'); }
+    else { el.textContent = '📊 Рынок стабилен'; }
+}
+function getSellPrice(num) {
+    return Math.floor(num.finalPrice * getMarketMultiplier() * (player.multiplier||1));
+}
+
+// ===== МОДАЛКА =====
+const QUICK_CODES = ['+7','+375','+380','+1','+44','+888','+777','+8888','+999','+000'];
+
+function openCustomNumber() {
+    document.getElementById('customNumberInput').value = '';
+    document.getElementById('customModal').classList.add('show');
+    renderQuickCodes();
+    updateParsedInfo();
+}
+function renderQuickCodes() {
+    document.getElementById('quickCodes').innerHTML = QUICK_CODES.map(c =>
+        `<button class="quick-code" onclick="insertQuickCode('${c}')">${c}</button>`
+    ).join('');
+}
+function insertQuickCode(code) {
+    const input = document.getElementById('customNumberInput');
+    input.value = code;
+    input.focus();
+    updateParsedInfo();
+}
+function closeCustomNumber() { document.getElementById('customModal').classList.remove('show'); }
+
+// ГЛАВНЫЙ ФИКС: цена = 75% от цены продажи (нельзя навариться)
+function getCustomCost(parsed) {
+    const tempNum = {
+        code: parsed.code, country: parsed.countryName,
+        numberOnly: parsed.fullDigits, fullDigits: parsed.fullDigits,
+        known: parsed.known, evaluated: false
+    };
+    evaluate(tempNum);
+    
+    // 75% от возможной цены продажи + фикс
+    let sellBase = Math.floor(tempNum.finalPrice * getMarketMultiplier() * (player.multiplier||1));
+    let cost = Math.floor(sellBase * 0.75);
+    cost += parsed.fullDigits.length * 200;
+    if (cost < 100) cost = 100;
+    return cost;
+}
+
+function updateParsedInfo() {
+    const input = document.getElementById('customNumberInput');
+    const parsed = parsePhoneNumber(input.value);
+    
+    if (!parsed) {
+        document.getElementById('parsedFull').textContent = '—';
+        document.getElementById('parsedCountry').textContent = '—';
+        document.getElementById('parsedLen').textContent = '—';
+        document.getElementById('customPrice').textContent = '💰 Введи номер';
+        return;
+    }
+    
+    document.getElementById('parsedFull').textContent = parsed.displayFull;
+    document.getElementById('parsedCountry').textContent = parsed.countryName;
+    document.getElementById('parsedLen').textContent = parsed.fullDigits.length;
+    
+    if (parsed.fullDigits.length < 3) {
+        document.getElementById('customPrice').textContent = '💰 Мин. 3 цифры';
+        return;
+    }
+    
+    const cost = getCustomCost(parsed);
+    document.getElementById('customPrice').textContent = '💰 Стоимость: ' + formatMoney(cost) + ' ₽';
+}
+
+document.addEventListener('input', function(e) {
+    if (e.target.id === 'customNumberInput') {
+        e.target.value = e.target.value.replace(/[^\d+]/g,'');
+        updateParsedInfo();
+    }
+});
+
+function submitCustomNumber() {
+    const input = document.getElementById('customNumberInput');
+    const parsed = parsePhoneNumber(input.value);
+    
+    if (!parsed || parsed.fullDigits.length < 3) {
+        showToast('❌ Мин 3 цифры', 'error'); return;
+    }
+    
+    const cost = getCustomCost(parsed);
+    
+    if (player.money < cost) {
+        if (!player.balanceFrozen) {
+            player.money = cost;
+            showToast('💰 Пополнено до ' + formatMoney(cost), 'success');
+        } else {
+            showToast('❌ Нужно ' + formatMoney(cost), 'error'); return;
+        }
+    }
+    
+    if (!player.balanceFrozen) player.money -= cost;
+    
+    const num = {
+        code: parsed.code, flag: parsed.flag, country: parsed.countryName,
+        numberOnly: parsed.fullDigits, fullDigits: parsed.fullDigits,
+        known: parsed.known, evaluated: false,
+        displayFull: parsed.displayFull
+    };
+    
+    evaluate(num);
+    player.numbersGenerated++;
+    player.customNumbers++;
+    if (num.score > player.bestScore) player.bestScore = num.score;
+    
+    currentNumber = num;
+    showResult(num);
+    closeCustomNumber();
+    updateUI(); save();
+}
+
+// ===== ГЕНЕРАЦИЯ =====
+function generateNumber() {
+    const codes = Object.keys(COUNTRY_CODES);
+    const code = codes[random(0, codes.length-1)];
+    const info = COUNTRY_CODES[code];
+    const restLen = random(6, 11);
+    let digits = '';
+    const roll = random(1,100) + (player.luck||0)*2 + (player.pattern||0)*2;
+    
+    if (roll > 97) {
+        const d = random(0,9); digits = String(d).repeat(restLen);
+    } else if (roll > 92) {
+        const d = random(0,9);
+        for (let i=0;i<restLen;i++) digits += Math.random()<.85 ? d : random(0,9);
+    } else if (roll > 85) {
+        const half = Math.ceil(restLen/2); let h='';
+        for (let i=0;i<half;i++) h += random(0,9);
+        digits = (h + h.split('').reverse().join('')).slice(0,restLen);
+    } else if (roll > 78) {
+        const start = random(0,3);
+        for (let i=0;i<restLen;i++) digits += (start+i)%10;
+    } else if (roll > 68) {
+        for (let i=0;i<restLen;i++) digits += ((Math.floor(i/2))%10);
+    } else if (roll > 55) {
+        for (let i=0;i<restLen;i++) digits += Math.random()<.7 ? 7 : random(0,9);
+    } else {
+        for (let i=0;i<restLen;i++) digits += random(0,9);
+    }
+    
+    return {
+        code: '+' + code, flag: info.f, country: info.f + ' ' + info.n,
+        numberOnly: code + digits, fullDigits: code + digits,
+        known: true, evaluated: false,
+        displayFull: '+' + code + digits
+    };
+}
+
+function getGenerateCost() {
+    return Math.max(10, 50 + generateCount*3 - (player.reputation||0)*5);
+}
+
+function generate() {
+    const cost = getGenerateCost();
+    
+    if (player.money < cost) {
+        if (!player.balanceFrozen) {
+            player.money = cost;
+            showToast('💰 Пополнено до ' + cost, 'success');
+        } else { showToast('❌ Нужно ' + cost, 'error'); return; }
+    }
+    
+    if (!player.balanceFrozen) player.money -= cost;
+    generateCount++;
+    player.numbersGenerated++;
+    
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    const delay = Math.max(50, 600 - (player.speed||0)*50);
+    btn.innerHTML = '📡 СКАНИРУЮ...';
+    
+    setTimeout(() => {
+        currentNumber = generateNumber();
+        evaluate(currentNumber);
+        if (currentNumber.score > player.bestScore) player.bestScore = currentNumber.score;
+        showResult(currentNumber);
+        btn.disabled = false;
+        updateUI(); save();
+    }, delay);
+}
+
+function showResult(num) {
+    const panel = document.getElementById('resultPanel');
+    const price = getSellPrice(num);
+    const display = num.displayFull || (num.code + ' ' + num.numberOnly);
+    
+    panel.innerHTML = `
+        <div class="card ${num.rarity.cls}">
+            <div class="rarity-bar" style="background:${num.rarity.color};"></div>
+            <div style="text-align:center;font-size:11px;color:#7a7a9e;margin-bottom:6px;">${num.country||''}</div>
+            <div class="num-text">${display}</div>
+            <div class="meta">
+                <span style="color:${num.rarity.color};">${num.rarity.name}</span>
+                <span id="scoreAnim">0/100</span>
+                <span class="price-text">💰 ${formatMoney(price)}</span>
+            </div>
+            <div class="tags">${num.tags.map(t=>`<div class="tag">${t}</div>`).join('')}</div>
+            <div class="actions">
+                <button class="btn btn-sell" onclick="sellCurrent()">💰 ${formatMoney(price)}</button>
+                <button class="btn btn-keep" onclick="keepCurrent()">📦</button>
+                <button class="btn btn-skip" onclick="skipCurrent()">🗑</button>
+            </div>
+        </div>`;
+    animateScore(num.score);
+}
+
+function animateScore(target) {
+    const el = document.getElementById('scoreAnim');
+    if (!el) return;
+    let cur = 0;
+    const step = Math.max(1, Math.ceil(target/30));
+    const delay = Math.max(5, 25-(player.speed||0));
+    const timer = setInterval(() => {
+        cur += step;
+        if (cur >= target) { cur = target; clearInterval(timer); }
+        el.textContent = cur+'/100';
+    }, delay);
+}
+
+function sellCurrent() {
+    if (!currentNumber) return;
+    let price = getSellPrice(currentNumber);
+    
+    if ((player.megaSale||0) > 0) {
+        if (Math.random()*100 < player.megaSale*2) {
+            const mult = 2 + Math.floor(Math.random()*9);
+            price *= mult;
+            showToast('💥 МЕГА x'+mult+'!', 'success');
+        }
+    }
+    if ((player.comboMaster||0) > 0) {
+        comboCount++;
+        const comboBonus = Math.min(100, comboCount*player.comboMaster*2);
+        price = Math.floor(price * (1 + comboBonus/100));
+    }
+    
+    player.money += price;
+    player.totalEarned += price;
+    player.numbersSold++;
+    player.soldHistory.push({...currentNumber, sellPrice: price, display: currentNumber.displayFull});
+    if (player.soldHistory.length > 10) player.soldHistory.shift();
+    
+    showToast('💰 +'+formatMoney(price), 'success');
+    currentNumber = null;
+    document.getElementById('resultPanel').innerHTML = '';
+    updateUI(); updateRecent(); save();
+}
+
+function keepCurrent() {
+    if (!currentNumber) return;
+    const maxSlots = getInventoryCapacity();
+    if (player.inventory.length >= maxSlots) { showToast('❌ Инвентарь полон', 'error'); return; }
+    player.inventory.push(currentNumber);
+    showToast('📦 Добавлено', 'success');
+    currentNumber = null;
+    document.getElementById('resultPanel').innerHTML = '';
+    updateUI(); renderInventory(); save();
+}
+
+function skipCurrent() {
+    currentNumber = null;
+    document.getElementById('resultPanel').innerHTML = '';
+    updateUI(); save();
+}
+
+// ===== ПРОКАЧКИ =====
+function getInventoryCapacity() {
+    return 10 + (player.reputation||0)*2 + (player.inventorySlots||0)*5;
+}
+
+const UPGRADES = [
+    {id:'luck',name:'🍀 Удача',desc:'+шанс редких',max:100,base:500,mult:1.25},
+    {id:'pattern',name:'🎯 Паттерны',desc:'+шанс паттернов',max:100,base:800,mult:1.28},
+    {id:'scanner',name:'📡 Сканер',desc:'+50% к цене',max:100,base:1000,mult:1.22},
+    {id:'reputation',name:'⭐ Репутация',desc:'+2 слота за уровень',max:50,base:5000,mult:1.55},
+    {id:'inventorySlots',name:'📦 Вместимость инвентаря',desc:'+5 слотов за уровень',max:100,base:2500,mult:1.38},
+    {id:'speed',name:'⚡ Скорость',desc:'-50мс анимация',max:20,base:2000,mult:1.5},
+    {id:'multiplier',name:'💎 Множитель',desc:'+10% к цене',max:50,base:10000,mult:1.35},
+    {id:'rareChance',name:'🌟 Шанс редких',desc:'+5% базовый',max:20,base:15000,mult:1.6},
+    {id:'autoGen',name:'🤖 Автогенерация',desc:'Автоген',max:20,base:50000,mult:1.7},
+    {id:'dailyBonus',name:'📅 Дневной бонус',desc:'+дн. бонус',max:50,base:25000,mult:1.4},
+    {id:'comboMaster',name:'🎪 Комбо-мастер',desc:'+% за продажу',max:30,base:20000,mult:1.5},
+    {id:'megaSale',name:'💥 Мега-продажа',desc:'Шанс x2-x10',max:20,base:75000,mult:1.6},
+    {id:'bulkSell',name:'📦 Оптовая продажа',desc:'+5% за 3+ продажи',max:20,base:30000,mult:1.55}
+];
+
+function getUpgradeCost(u, level) { return Math.floor(u.base * Math.pow(u.mult, level)); }
+
+function renderShop() {
+    const el = document.getElementById('sectionShop');
+    el.innerHTML = UPGRADES.map(u => {
+        const lvl = player[u.id]||0;
+        const cost = getUpgradeCost(u, lvl);
+        const maxed = lvl >= u.max;
+        const canBuy = !maxed && player.money >= cost;
+        return `<div class="upgrade-card">
+            <div class="up-name">${u.name}</div>
+            <div class="up-desc">${u.desc}</div>
+            <div class="up-row">
+                <div class="up-level">Ур. ${lvl}/${u.max}</div>
+                <button class="up-buy" ${maxed||!canBuy?'disabled':''} onclick="buyUpgrade('${u.id}')">
+                    ${maxed?'MAX':formatMoney(cost)+' ₽'}
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function buyUpgrade(id) {
+    const u = UPGRADES.find(x => x.id === id);
+    const lvl = player[id]||0;
+    const cost = getUpgradeCost(u, lvl);
+    if (lvl >= u.max) return;
+    if (player.money < cost) { showToast('❌ Нужно '+formatMoney(cost), 'error'); return; }
+    player.money -= cost;
+    player[id] = (player[id]||0) + 1;
+    if (id === 'multiplier') player.multiplier = Math.round((1+lvl*0.1+0.1)*10)/10;
+    if (id === 'autoGen') restartAutoGen();
+    showToast('✅ '+u.name+' улучшено!', 'success');
+    updateUI(); renderShop(); save();
+}
+
+function restartAutoGen() {
+    if (autoGenInterval) clearInterval(autoGenInterval);
+    if ((player.autoGen||0) > 0) {
+        const interval = Math.max(2000, 10000 - player.autoGen*800);
+        autoGenInterval = setInterval(() => {
+            if (!currentNumber && player.autoGen > 0) generate();
+        }, interval);
+    }
+}
+
+// ===== ИНВЕНТАРЬ =====
+function renderInventory() {
+    const el = document.getElementById('sectionInv');
+    if (player.inventory.length === 0) { el.innerHTML = '<div class="empty">📭 Инвентарь пуст</div>'; return; }
+    el.innerHTML = player.inventory.map((num, i) => {
+        const price = getSellPrice(num);
+        const display = num.displayFull || (num.code + ' ' + num.numberOnly);
+        return `<div class="inv-item">
+            <div class="card ${num.rarity.cls}">
+                <div class="rarity-bar" style="background:${num.rarity.color};"></div>
+                <div style="text-align:center;font-size:10px;color:#7a7a9e;">${num.country||''}</div>
+                <div class="num-text">${display}</div>
+                <div class="meta">
+                    <span style="color:${num.rarity.color};font-size:12px;">${num.rarity.name}</span>
+                    <span style="font-size:12px;">${num.score}/100</span>
+                    <span style="font-size:12px;color:#FFD700;">💰 ${formatMoney(price)}</span>
+                </div>
+            </div>
+            <button class="inv-sell" onclick="sellFromInv(${i})">💰 ПРОДАТЬ ${formatMoney(price)} ₽</button>
+        </div>`;
+    }).join('');
+}
+
+function sellFromInv(index) {
+    const num = player.inventory[index];
+    let price = getSellPrice(num);
+    
+    if ((player.megaSale||0) > 0) {
+        if (Math.random()*100 < player.megaSale*2) {
+            const mult = 2 + Math.floor(Math.random()*9);
+            price *= mult;
+            showToast('💥 МЕГА x'+mult+'!', 'success');
+        }
+    }
+    if ((player.comboMaster||0) > 0) {
+        comboCount++;
+        const comboBonus = Math.min(100, comboCount*player.comboMaster*2);
+        price = Math.floor(price * (1 + comboBonus/100));
+    }
+    if ((player.bulkSell||0) > 0 && player.inventory.length >= 3) {
+        price = Math.floor(price * (1 + player.bulkSell*0.05));
+    }
+    
+    player.money += price;
+    player.totalEarned += price;
+    player.numbersSold++;
+    player.soldHistory.push({...num, sellPrice: price, display: num.displayFull});
+    if (player.soldHistory.length > 10) player.soldHistory.shift();
+    player.inventory.splice(index, 1);
+    showToast('💰 +'+formatMoney(price), 'success');
+    updateUI(); renderInventory(); updateRecent(); save();
+}
+
+// ===== ВКЛАДКИ =====
+function showTab(tab) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    if (tab === 'shop') {
+        document.getElementById('sectionShop').classList.add('active');
+        document.getElementById('tabShop').classList.add('active');
+    } else if (tab === 'inv') {
+        document.getElementById('sectionInv').classList.add('active');
+        document.getElementById('tabInv').classList.add('active');
+        renderInventory();
+    } else {
+        document.getElementById('sectionPromo').classList.add('active');
+        document.getElementById('tabPromo').classList.add('active');
+        renderMyPromos();
+    }
+}
+
+// ===== UI =====
+function updateUI() {
+    document.getElementById('moneyDisplay').textContent = '💰 ' + formatMoney(player.money) + ' ₽';
+    document.getElementById('statsDisplay').innerHTML =
+        `Ген: ${player.numbersGenerated} | Прод: ${player.numbersSold}<br>
+         Инв: ${player.inventory.length}/${getInventoryCapacity()} | Лучший: ${player.bestScore}/100 | Мн: x${player.multiplier}<br>
+         Комбо: ${comboCount}`;
+    const btn = document.getElementById('generateBtn');
+    btn.textContent = '🎰 СГЕНЕРИРОВАТЬ (' + getGenerateCost() + ' ₽)';
+    renderShop();
+}
+
+function updateRecent() {
+    const panel = document.getElementById('recentPanel');
+    if (player.soldHistory.length === 0) { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    const list = player.soldHistory.slice(-5).reverse();
+    document.getElementById('recentList').innerHTML = list.map(s => {
+        const disp = s.display || (s.code + ' ' + s.numberOnly);
+        return `<div class="recent-item">
+            <span style="color:${s.rarity.color};">${disp}</span>
+            <span style="color:#FFD700;font-weight:bold;">+${formatMoney(s.sellPrice)}</span>
+        </div>`;
+    }).join('');
+}
+
+// ===== ПРОМО =====
+function activatePromo() {
+    const input = document.getElementById('promoInput');
+    const code = input.value.trim().toUpperCase();
+    if (!code) { showToast('❌ Введи код', 'error'); return; }
+    
+    const promo = promos.find(p => p.code === code);
+    if (!promo) { showToast('❌ Не найден', 'error'); return; }
+    if (promo.usedBy && promo.usedBy.includes(player.playerId)) { showToast('❌ Уже использовал', 'error'); return; }
+    if (promo.uses > 0 && (promo.usedBy?.length||0) >= promo.uses) { showToast('❌ Исчерпан', 'error'); return; }
+    
+    let rewards = [];
+    if (promo.money > 0) { player.money += promo.money; rewards.push('💰+'+formatMoney(promo.money)); }
+    if (promo.scans > 0) { player.scanner = (player.scanner||1) + promo.scans; rewards.push('📡+'+promo.scans); }
+    if (promo.luck > 0) { player.luck = (player.luck||0) + promo.luck; rewards.push('🍀+'+promo.luck); }
+    if (promo.multi > 0) { player.multiplier = Math.round((player.multiplier+promo.multi)*10)/10; rewards.push('💎+'+promo.multi); }
+    
+    if (!promo.usedBy) promo.usedBy = [];
+    promo.usedBy.push(player.playerId);
+    if (!player.claimedPromos) player.claimedPromos = [];
+    player.claimedPromos.push(code);
+    input.value = '';
+    showToast('🎁 '+rewards.join(' '), 'success');
+    updateUI(); renderMyPromos(); save();
+}
+
+function renderMyPromos() {
+    const el = document.getElementById('myPromos');
+    if (!player.claimedPromos || player.claimedPromos.length === 0) {
+        el.innerHTML = '<div class="empty" style="padding:20px;">🎁 Пока нет активированных промокодов</div>';
+        return;
+    }
+    el.innerHTML = '<div class="recent-title" style="margin-top:12px;">✅ АКТИВИРОВАННЫЕ:</div>' +
+        player.claimedPromos.map(code => `<div class="promo-item"><div class="promo-code">🎫 ${code}</div></div>`).join('');
+}
+
+// ===== АДМИН =====
+let adminUnlocked = false;
+
+function openAdmin() {
+    if (!adminUnlocked) {
+        var pass = prompt('🔐 Пароль:');
+        if (pass === ADMIN_PASSWORD) { adminUnlocked = true; showToast('✅ Доступ разрешён', 'success'); }
+        else { showToast('❌ Неверный пароль', 'error'); return; }
+    }
+    updateAdminStats(); renderAdminPromos();
+    document.getElementById('adminPanel').classList.add('show');
+}
+function closeAdmin() { document.getElementById('adminPanel').classList.remove('show'); }
+
+function adminAddMoney() {
+    var v = parseInt(document.getElementById('adminMoney').value);
+    if (isNaN(v)) return showToast('❌', 'error');
+    player.money += v;
+    if (player.money < 0) player.money = 0;
+    updateUI(); updateAdminStats(); save();
+    showToast('💰 '+formatMoney(player.money), 'success');
+}
+function adminSetMoney() {
+    var v = parseInt(document.getElementById('adminMoney').value);
+    if (isNaN(v)) return showToast('❌', 'error');
+    player.money = Math.max(0, v);
+    updateUI(); updateAdminStats(); save();
+    showToast('💰 '+formatMoney(player.money), 'success');
+}
+function adminGiveCustomValue(t) {
+    player.money += t*1000;
+    updateUI(); updateAdminStats(); save();
+    showToast('💰 +'+formatMoney(t*1000), 'success');
+}
+
+function adminGiveCustom() {
+    const input = document.getElementById('adminCustomNum');
+    const parsed = parsePhoneNumber(input.value);
+    if (!parsed || parsed.fullDigits.length < 3) { showToast('❌ Неверный', 'error'); return; }
+    
+    const num = {
+        code: parsed.code, flag: parsed.flag, country: parsed.countryName,
+        numberOnly: parsed.fullDigits, fullDigits: parsed.fullDigits,
+        known: parsed.known, evaluated: false, displayFull: parsed.displayFull
+    };
+    evaluate(num);
+    
+    if (player.inventory.length >= 10 + (player.reputation||0)*2) { showToast('❌ Полон', 'error'); return; }
+    player.inventory.push(num);
+    if (num.score > player.bestScore) player.bestScore = num.score;
+    input.value = '';
+    renderInventory(); updateUI(); save();
+    showToast('✅ '+parsed.displayFull, 'success');
+}
+
+function adminGiveGodlike() {
+    const num = { code:'+7', flag:'🇷🇺', country:'🇷🇺 Россия',
+        numberOnly:'7777777777', fullDigits:'7777777777', known:true, evaluated:false,
+        displayFull:'+7777777777' };
+    evaluate(num);
+    num.rarity = RARITIES.godlike; num.score = 100; num.finalPrice = 999999999;
+    if (player.inventory.length < 10 + (player.reputation||0)*2) {
+        player.inventory.push(num); renderInventory(); updateUI(); save();
+        showToast('👑 GODLIKE', 'success');
+    } else showToast('❌ Полон', 'error');
+}
+
+function adminGiveUltra() {
+    const num = { code:'+8888', flag:'🌐', country:'🌐 ULTRA',
+        numberOnly:'8888888888888', fullDigits:'8888888888888', known:false, evaluated:false,
+        displayFull:'+8888888888888' };
+    evaluate(num);
+    num.rarity = RARITIES.ultra; num.score = 100; num.finalPrice = 9999999999;
+    if (player.inventory.length < 10 + (player.reputation||0)*2) {
+        player.inventory.push(num); renderInventory(); updateUI(); save();
+        showToast('💎 ULTRA', 'success');
+    } else showToast('❌ Полон', 'error');
+}
+
+function adminCreatePromo() {
+    var code = document.getElementById('promoNewCode').value.trim().toUpperCase();
+    if (!code || code.length < 2) return showToast('❌ Мин 2', 'error');
+    if (promos.find(p => p.code === code)) return showToast('❌ Уже есть', 'error');
+    
+    var promo = {
+        code: code,
+        money: parseInt(document.getElementById('promoNewMoney').value) || 0,
+        scans: parseInt(document.getElementById('promoNewScans').value) || 0,
+        luck: parseInt(document.getElementById('promoNewLuck').value) || 0,
+        multi: parseFloat(document.getElementById('promoNewMulti').value) || 0,
+        uses: parseInt(document.getElementById('promoNewUses').value) || 0,
+        usedBy: []
+    };
+    promos.push(promo);
+    try { localStorage.setItem('nt_promos', JSON.stringify(promos)); } catch(e){}
+    
+    ['promoNewCode','promoNewMoney','promoNewScans','promoNewLuck','promoNewMulti','promoNewUses']
+        .forEach(id => document.getElementById(id).value = '');
+    
+    renderAdminPromos();
+    showToast('✅ '+code, 'success');
+}
+
+function renderAdminPromos() {
+    var el = document.getElementById('adminPromoList');
+    if (promos.length === 0) { el.innerHTML = '<div style="color:#666;font-size:12px;">Нет промо</div>'; return; }
+    el.innerHTML = promos.map((p, i) => {
+        var r = [];
+        if (p.money) r.push('💰'+formatMoney(p.money));
+        if (p.scans) r.push('📡+'+p.scans);
+        if (p.luck) r.push('🍀+'+p.luck);
+        if (p.multi) r.push('💎+'+p.multi);
+        var used = (p.usedBy?.length||0) + '/' + (p.uses > 0 ? p.uses : '∞');
+        return `<div class="promo-item">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div class="promo-code">${p.code}</div>
+                    <div class="promo-rewards">${r.join(' ')}</div>
+                    <div class="promo-desc">Исп: ${used}</div>
+                </div>
+                <button onclick="adminDeletePromo(${i})" style="background:#e94560;border:none;color:#fff;padding:8px 12px;border-radius:6px;font-size:11px;">🗑</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function adminDeletePromo(i) {
+    if (!confirm('Удалить '+promos[i].code+'?')) return;
+    promos.splice(i, 1);
+    try { localStorage.setItem('nt_promos', JSON.stringify(promos)); } catch(e){}
+    renderAdminPromos(); showToast('🗑', 'success');
+}
+
+function adminSetUpgrades() {
+    var map = {luck:'adminLuck',pattern:'adminPattern',scanner:'adminScanner',
+        reputation:'adminRep',inventorySlots:'adminInvSlots',speed:'adminSpeed',multiplier:'adminMulti',
+        autoGen:'adminAuto',rareChance:'adminRareChance',
+        comboMaster:'adminCombo',megaSale:'adminMega',bulkSell:'adminBulk'};
+    var lim = {luck:100,pattern:100,scanner:100,reputation:50,inventorySlots:100,speed:20,
+        multiplier:50,autoGen:20,rareChance:100,comboMaster:30,megaSale:20,bulkSell:20};
+    for (var k in map) {
+        var v = parseInt(document.getElementById(map[k]).value);
+        if (!isNaN(v)) { player[k] = Math.min(lim[k], Math.max(0, v)); if (k==='scanner'&&player[k]===0) player[k]=1; }
+    }
+    restartAutoGen();
+    updateUI(); updateAdminStats(); save();
+    showToast('✅', 'success');
+}
+
+function adminMaxEverything() {
+    player.luck = 100; player.pattern = 100; player.scanner = 100;
+    player.reputation = 50; player.inventorySlots = 100; player.speed = 20; player.multiplier = 50;
+    player.rareChance = 100; player.autoGen = 20; player.dailyBonus = 50;
+    player.comboMaster = 30; player.megaSale = 20; player.bulkSell = 20;
+    player.money = 999999999999;
+    restartAutoGen();
+    updateUI(); updateAdminStats(); save();
+    showToast('👑 MAX', 'success');
+}
+
+function adminReset() {
+    if (!confirm('Сбросить?')) return;
+    var pid = player.playerId;
+    player = {money:500,luck:0,pattern:0,scanner:1,reputation:0,speed:0,
+        multiplier:1,autoGen:0,rareChance:0,dailyBonus:0,comboMaster:0,
+        megaSale:0,bulkSell:0,inventorySlots:0,inventory:[],soldHistory:[],
+        numbersGenerated:0,numbersSold:0,bestScore:0,totalEarned:0,
+        balanceFrozen:false,customNumbers:0,claimedPromos:[],playerId:pid};
+    generateCount = 0; comboCount = 0; currentNumber = null;
+    if (autoGenInterval) clearInterval(autoGenInterval);
+    document.getElementById('resultPanel').innerHTML = '';
+    updateUI(); renderInventory(); updateRecent(); updateAdminStats(); save();
+    showToast('🔄', 'success');
+}
+
+function adminClearInv() {
+    if (!confirm('Очистить?')) return;
+    player.inventory = [];
+    renderInventory(); updateUI(); save();
+    showToast('🗑', 'success');
+}
+
+function adminToggleFreeze() {
+    player.balanceFrozen = !player.balanceFrozen;
+    document.getElementById('freezeState').textContent = player.balanceFrozen ? 'ON' : 'OFF';
+    save();
+    showToast(player.balanceFrozen ? '❄️' : '🔥', 'success');
+}
+
+function adminExportSave() { prompt('Сохранение:', JSON.stringify(player)); }
+
+function adminImportSave() {
+    var data = prompt('Вставь:');
+    if (!data) return;
+    try { var obj = JSON.parse(data); for (var k in obj) player[k] = obj[k];
+        updateUI(); renderInventory(); updateRecent(); save(); showToast('✅', 'success'); }
+    catch(e) { showToast('❌', 'error'); }
+}
+
+function updateAdminStats() {
+    var el = document.getElementById('adminStats');
+    if (!el) return;
+    el.innerHTML = 
+        '💰 '+formatMoney(player.money)+' ₽<br>'+
+        '🎰 '+player.numbersGenerated+' | ✍️ '+(player.customNumbers||0)+'<br>'+
+        '💵 '+player.numbersSold+' | 📦 '+player.inventory.length+'<br>'+
+        '⭐ '+player.bestScore+'/100<br>'+
+        '📈 '+formatMoney(player.totalEarned)+'<br>'+
+        '🍀 '+player.luck+' | 🎯 '+player.pattern+'<br>'+
+        '📡 '+player.scanner+' | ⭐ '+player.reputation+'<br>'+
+        '💎 x'+player.multiplier+' | 🌟 '+player.rareChance+'<br>'+
+        '🎪 '+(player.comboMaster||0)+' | 💥 '+(player.megaSale||0)+'<br>'+
+        '📦 '+(player.bulkSell||0)+' | 🎁 '+promos.length;
+}
+
+let toastTimer;
+function showToast(text, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = text;
+    el.className = 'toast show '+type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = 'toast '+type; }, 2500);
+}
+
+// ===== СТАРТ =====
+load();
+updateMarket();
+updateUI();
+renderShop();
+renderInventory();
+updateRecent();
+renderMyPromos();
+restartAutoGen();
+if (player.money < 50) { player.money = 500; save(); }
+</script>
+
+</body>
+</html>

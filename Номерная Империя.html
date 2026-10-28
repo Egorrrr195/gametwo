@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🚗 АВТО-Генератор</title>
+    <style>
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+          user-select: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+          color-scheme: dark light;
+        }
+        body {
+          background:
+            repeating-linear-gradient(45deg, #1a1a1a 0px, #1a1a1a 20px, #1f1f1f 20px, #1f1f1f 40px),
+            #151515;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+          padding: 12px;
+          color: #f5f5f5;
+          overflow-x: hidden;
+          transition: background 0.3s, color 0.3s;
+        }
+        .app {
+          max-width: 800px;
+          width: 100%;
+          background: linear-gradient(180deg, #222 0%, #141414 100%);
+          border-radius: 24px;
+          box-shadow:
+            0 30px 60px rgba(0,0,0,0.8),
+            0 0 0 3px #f5b800,
+            0 0 0 6px #1a1a1a,
+            0 0 60px rgba(245,184,0,0.15);
+          padding: 20px 18px 24px;
+          position: relative;
+          overflow: hidden;
+          transition: background 0.3s, box-shadow 0.3s, color 0.3s;
+        }
+        .app::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 6px;
+          background: repeating-linear-gradient(
+            90deg,
+            #f5b800 0px, #f5b800 20px,
+            #1a1a1a 20px, #1a1a1a 40px
+          );
+        }
+
+        header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          position: relative;
+          z-index: 2;
+          margin-bottom: 14px;
+          margin-top: 4px;
+        }
+        h1 {
+          font-size: 1.4rem;
+          font-weight: 900;
+          color: #f5b800;
+          letter-spacing: 1px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          text-transform: uppercase;
+          text-shadow: 2px 2px 0 #000;
+          flex-shrink: 0;
+        }
+        h1 .tag {
+          background: #f5b800;
+          color: #1a1a1a;
+          font-size: 0.6rem;
+          padding: 3px 8px;
+          border-radius: 4px;
+          letter-spacing: 1px;
+          font-weight: 900;
+        }
+        .header-actions {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+        .icon-btn {
+          background: #1a1a1a;
+          border: 2px solid #f5b800;
+          color: #f5b800;
+          font-size: 0.95rem;
+          font-weight: 700;
+          border-radius: 10px;
+          padding: 7px 12px;
+          cursor: pointer;
+          transition: all 0.1s;
+          font-family: inherit;
+          white-space: nowrap;
+        }
+        .icon-btn:active {
+          transform: scale(0.94);
+          background: #f5b800;
+          color: #1a1a1a;
+        }
+        .theme-btn {
+          font-size: 0.8rem;
+          padding: 7px 10px;
+        }
+
+        .balance-box {
+          background: #0d0d0d;
+          border: 2px solid #333;
+          border-radius: 14px;
+          padding: 10px 16px;
+          margin-bottom: 12px;
+          position: relative;
+          z-index: 2;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          overflow: hidden;
+          transition: background 0.3s, border-color 0.3s;
+        }
+        .balance-box::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 0; bottom: 0;
+          width: 4px;
+          background: #f5b800;
+        }
+        .balance-label {
+          font-size: 0.68rem;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          color: #777;
+          font-weight: 700;
+        }
+        .balance-value {
+          font-size: 1.7rem;
+          font-weight: 900;
+          color: #f5b800;
+          line-height: 1;
+          text-shadow: 0 0 15px rgba(245,184,0,0.3);
+        }
+        .stat-mini {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          font-size: 0.7rem;
+          color: #777;
+          font-weight: 700;
+          justify-content: flex-end;
+        }
+        .stat-mini span b { color: #f5b800; }
+
+        .tabs {
+          display: flex;
+          gap: 4px;
+          background: #0d0d0d;
+          border-radius: 12px;
+          padding: 4px;
+          margin-bottom: 14px;
+          position: relative;
+          z-index: 2;
+          border: 2px solid #222;
+          transition: background 0.3s, border-color 0.3s;
+        }
+        .tab {
+          flex: 1;
+          background: transparent;
+          border: none;
+          color: #777;
+          font-weight: 800;
+          font-size: 0.78rem;
+          padding: 10px 2px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.15s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 3px;
+          font-family: inherit;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .tab.active {
+          background: #f5b800;
+          color: #1a1a1a;
+          box-shadow: 0 0 20px rgba(245,184,0,0.3);
+        }
+        .panel { display: none; }
+        .panel.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== ПЛАШКА НОМЕРА ===== */
+        .plate-scene {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+          padding: 4px 0 12px;
+        }
+
+        .plate-wrap {
+          width: 100%;
+          max-width: 400px;
+          background: #000;
+          border-radius: 6px;
+          padding: 5px;
+          box-shadow:
+            0 15px 35px rgba(0,0,0,0.7),
+            0 0 0 2px #f5b800;
+          transition: box-shadow 0.3s;
+        }
+        .plate-wrap.rarity-good {
+          box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 0 2px #2ecc71, 0 0 30px rgba(46,204,113,0.4);
+        }
+        .plate-wrap.rarity-rare {
+          box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 0 2px #a06bff, 0 0 40px rgba(160,107,255,0.5);
+        }
+        .plate-wrap.rarity-epic {
+          box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 0 2px #ff4fa3, 0 0 50px rgba(255,79,163,0.6);
+          animation: epicShake 0.5s;
+        }
+        .plate-wrap.rarity-legendary {
+          box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 0 2px #ffd166, 0 0 70px rgba(255,209,102,0.7);
+          animation: legendaryGlow 2s infinite alternate;
+        }
+        @keyframes legendaryGlow {
+          from { box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 0 2px #ffd166, 0 0 50px rgba(255,209,102,0.6); }
+          to { box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 0 2px #ffd166, 0 0 100px rgba(255,209,102,1); }
+        }
+        @keyframes epicShake {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-8px) rotate(-1deg); }
+          40% { transform: translateX(8px) rotate(1deg); }
+          60% { transform: translateX(-6px) rotate(-1deg); }
+          80% { transform: translateX(6px) rotate(1deg); }
+        }
+
+        .plate {
+          width: 100%;
+          aspect-ratio: 4.2 / 1;
+          background: #fff;
+          border-radius: 2px;
+          cursor: pointer;
+          transition: transform 0.15s;
+          display: flex;
+          align-items: stretch;
+          overflow: hidden;
+          position: relative;
+          font-family: 'Arial Narrow', 'Arial', sans-serif;
+        }
+        .plate:active { transform: scale(0.98); }
+
+        .plate-flag {
+          width: 12%;
+          min-width: 42px;
+          padding: 3px 2px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          background: transparent;
+        }
+        .plate-flag .flag {
+          width: 100%;
+          height: 42%;
+          display: flex;
+          flex-direction: column;
+          border: 0.5px solid #333;
+          border-radius: 1px;
+          overflow: hidden;
+          margin-top: 2px;
+        }
+        .plate-flag .flag div {
+          flex: 1;
+        }
+        .plate-flag .flag .white { background: #fff; }
+        .plate-flag .flag .blue { background: #0039a6; }
+        .plate-flag .flag .red { background: #d52b1e; }
+        .plate-flag .rus {
+          font-size: 0.5rem;
+          font-weight: 900;
+          color: #000;
+          letter-spacing: 0.5px;
+          line-height: 1;
+          margin-bottom: 2px;
+          font-family: Arial, sans-serif;
+        }
+
+        .plate-main {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          padding: 0 6px;
+          color: #000;
+        }
+        .plate-text {
+          font-size: 3.2rem;
+          font-weight: 900;
+          letter-spacing: 3px;
+          line-height: 1;
+          font-family: 'Arial Narrow', 'Arial', sans-serif;
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          white-space: nowrap;
+          transform: scaleY(1.15);
+          transform-origin: center;
+        }
+        .plate-text .grp {
+          display: inline-block;
+        }
+
+        .plate-region {
+          width: 16%;
+          min-width: 48px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2px;
+          color: #000;
+          border-left: 1px solid #000;
+        }
+        .plate-region .region-top {
+          font-size: 0.5rem;
+          font-weight: 900;
+          letter-spacing: 0.5px;
+          line-height: 1;
+          font-family: Arial, sans-serif;
+        }
+        .plate-region .region-num {
+          font-size: 1.5rem;
+          font-weight: 900;
+          line-height: 1;
+          font-family: 'Arial Narrow', 'Arial', sans-serif;
+          margin-top: 2px;
+        }
+        .plate-region .region-num.short {
+          font-size: 2rem;
+          letter-spacing: -1px;
+        }
+        .plate-region .region-num.long {
+          font-size: 1.2rem;
+        }
+
+        .plate.empty {
+          background: #2a2a2a;
+          cursor: default;
+        }
+        .plate.empty .plate-flag .flag {
+          opacity: 0.3;
+          border-color: #444;
+        }
+        .plate.empty .plate-flag .rus { color: #555; }
+        .plate.empty .plate-main {
+          color: #555;
+          font-size: 0.9rem;
+          font-weight: 900;
+          letter-spacing: 1.5px;
+          font-family: 'Segoe UI', sans-serif;
+        }
+        .plate.empty .plate-region {
+          border-left-color: #444;
+          color: #555;
+        }
+
+        .plate-info {
+          text-align: center;
+          min-height: 50px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        .plate-info .tier {
+          font-size: 1rem;
+          font-weight: 900;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          opacity: 0;
+          transform: translateY(10px);
+          transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .plate-info .tier.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .plate-info .tier.common { color: #888; }
+        .plate-info .tier.good { color: #2ecc71; }
+        .plate-info .tier.rare { color: #a06bff; }
+        .plate-info .tier.epic { color: #ff4fa3; }
+        .plate-info .tier.legendary { color: #ffd166; text-shadow: 0 0 15px rgba(255,209,102,0.8); }
+
+        .plate-info .ops {
+          font-size: 0.75rem;
+          color: #999;
+          margin-top: 4px;
+          font-weight: 700;
+          opacity: 0;
+          transform: translateY(10px);
+          transition: opacity 0.6s ease 0.15s, transform 0.6s ease 0.15s;
+          max-width: 90%;
+          line-height: 1.4;
+        }
+        .plate-info .ops.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .plate-info .price {
+          font-size: 1.15rem;
+          font-weight: 900;
+          color: #f5b800;
+          margin-top: 6px;
+          font-family: 'Arial Black', sans-serif;
+          opacity: 0;
+          transform: translateY(10px);
+          transition: opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s;
+        }
+        .plate-info .price.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .tap-hint {
+          text-align: center;
+          font-size: 0.8rem;
+          color: #f5b800;
+          font-weight: 800;
+          padding: 10px;
+          border-radius: 8px;
+          background: rgba(245,184,0,0.08);
+          border: 2px dashed #f5b800;
+          animation: tapPulse 1.5s infinite;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          transition: opacity 0.3s;
+        }
+        .tap-hint.disabled {
+          opacity: 0.3;
+          animation: none;
+          pointer-events: none;
+        }
+        @keyframes tapPulse {
+          0%, 100% { opacity: 0.75; }
+          50% { opacity: 1; }
+        }
+        .tap-hint .cost { color: #fff; font-weight: 900; }
+
+        .hint-text {
+          font-size: 0.72rem;
+          color: #777;
+          text-align: center;
+          font-weight: 600;
+          line-height: 1.5;
+        }
+        .hint-text b { color: #f5b800; }
+
+        /* ===== ЗАТЕМНЕНИЕ ЭКРАНА ПРИ РЕДКОМ НОМЕРЕ ===== */
+        .dark-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.85);
+          z-index: 80;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.5s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        .dark-overlay.show {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .reveal-block {
+          max-width: 500px;
+          width: 100%;
+          text-align: center;
+          transform: scale(0.7);
+          opacity: 0;
+          transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s;
+        }
+        .dark-overlay.show .reveal-block {
+          transform: scale(1);
+          opacity: 1;
+        }
+
+        .reveal-block .reveal-plate {
+          margin: 0 auto 20px;
+          max-width: 420px;
+        }
+
+        .reveal-title {
+          font-size: 1.8rem;
+          font-weight: 900;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          margin-bottom: 8px;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: opacity 0.6s ease 0.5s, transform 0.6s ease 0.5s;
+        }
+        .reveal-title.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .reveal-title.epic {
+          color: #ff4fa3;
+          text-shadow: 0 0 25px rgba(255,79,163,0.8);
+        }
+        .reveal-title.legendary {
+          color: #ffd166;
+          text-shadow: 0 0 30px rgba(255,209,102,1);
+          animation: legendaryPulse 0.8s infinite alternate;
+        }
+        @keyframes legendaryPulse {
+          from { text-shadow: 0 0 30px rgba(255,209,102,0.8); }
+          to { text-shadow: 0 0 50px rgba(255,209,102,1), 0 0 80px rgba(255,209,102,0.6); }
+        }
+
+        .reveal-ops {
+          font-size: 1rem;
+          color: #ccc;
+          font-weight: 700;
+          margin-bottom: 12px;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: opacity 0.6s ease 0.7s, transform 0.6s ease 0.7s;
+          line-height: 1.5;
+        }
+        .reveal-ops.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .reveal-price {
+          font-size: 1.6rem;
+          font-weight: 900;
+          color: #f5b800;
+          font-family: 'Arial Black', sans-serif;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: opacity 0.6s ease 0.9s, transform 0.6s ease 0.9s;
+        }
+        .reveal-price.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .reveal-continue {
+          margin-top: 22px;
+          font-size: 0.8rem;
+          color: #777;
+          font-weight: 700;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          opacity: 0;
+          transition: opacity 0.6s ease 1.4s;
+        }
+        .reveal-continue.show {
+          opacity: 1;
+          animation: tapPulse 1.5s infinite;
+        }
+
+        /* ===== СПИСКИ ===== */
+        .collection-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px;
+          padding: 0 4px;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .collection-title {
+          font-size: 0.85rem;
+          font-weight: 900;
+          color: #f5b800;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+        .collection-count {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #777;
+        }
+        .bulk-btns {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .bulk-btn {
+          background: #1a1a1a;
+          border: 2px solid #333;
+          color: #ccc;
+          font-weight: 800;
+          font-size: 0.72rem;
+          padding: 7px 11px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.1s;
+          white-space: nowrap;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-family: inherit;
+        }
+        .bulk-btn:active { transform: scale(0.95); }
+        .bulk-btn.sell { background: #1a3a1a; border-color: #2ecc71; color: #2ecc71; }
+        .bulk-btn.safe { background: #1a2a3a; border-color: #4fc3f7; color: #4fc3f7; }
+        .bulk-btn:disabled {
+          background: #111;
+          border-color: #222;
+          color: #444;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .collection-list, .safe-list {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          max-height: 420px;
+          overflow-y: auto;
+          padding-right: 4px;
+        }
+        .collection-list::-webkit-scrollbar,
+        .safe-list::-webkit-scrollbar { width: 6px; }
+        .collection-list::-webkit-scrollbar-thumb,
+        .safe-list::-webkit-scrollbar-thumb { background: #f5b800; border-radius: 3px; }
+        .collection-list::-webkit-scrollbar-track,
+        .safe-list::-webkit-scrollbar-track { background: #1a1a1a; }
+
+        .num-item {
+          background: #1a1a1a;
+          border-radius: 8px;
+          padding: 8px 10px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          border-left: 4px solid #444;
+          animation: itemIn 0.3s;
+          transition: background 0.3s;
+        }
+        @keyframes itemIn {
+          from { opacity: 0; transform: translateX(-10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .num-item.rarity-common { border-left-color: #666; }
+        .num-item.rarity-good { border-left-color: #2ecc71; }
+        .num-item.rarity-rare { border-left-color: #a06bff; }
+        .num-item.rarity-epic { border-left-color: #ff4fa3; }
+        .num-item.rarity-legendary {
+          border-left-color: #ffd166;
+          background: linear-gradient(90deg, #2a200a, #1a1a1a);
+          box-shadow: 0 0 15px rgba(255,209,102,0.15);
+        }
+
+        .mini-plate {
+          flex-shrink: 0;
+          background: #fff;
+          border-radius: 2px;
+          padding: 3px 5px 3px 5px;
+          position: relative;
+          font-family: 'Arial Narrow', Arial, sans-serif;
+          box-shadow: 0 0 0 1.5px #000;
+          min-width: 92px;
+          text-align: center;
+          color: #000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 3px;
+        }
+        .mini-plate .mp-flag {
+          width: 7px;
+          height: 14px;
+          display: flex;
+          flex-direction: column;
+          border: 0.5px solid #333;
+        }
+        .mini-plate .mp-flag div { flex: 1; }
+        .mini-plate .mp-flag .w { background: #fff; }
+        .mini-plate .mp-flag .b { background: #0039a6; }
+        .mini-plate .mp-flag .r { background: #d52b1e; }
+        .mini-plate .mp-body {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          line-height: 1;
+        }
+        .mini-plate .mp-code {
+          font-size: 0.7rem;
+          font-weight: 900;
+          letter-spacing: 0.5px;
+        }
+        .mini-plate .mp-region {
+          font-size: 0.5rem;
+          font-weight: 900;
+          margin-top: 1px;
+        }
+
+        .num-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          flex: 1;
+          min-width: 0;
+        }
+        .num-text {
+          font-family: 'Arial Black', sans-serif;
+          font-weight: 900;
+          font-size: 0.82rem;
+          color: #fff;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .num-meta {
+          font-size: 0.62rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .num-meta.common { color: #888; }
+        .num-meta.good { color: #2ecc71; }
+        .num-meta.rare { color: #a06bff; }
+        .num-meta.epic { color: #ff4fa3; }
+        .num-meta.legendary { color: #ffd166; }
+        .num-price {
+          font-weight: 900;
+          font-size: 0.85rem;
+          color: #f5b800;
+          white-space: nowrap;
+          flex-shrink: 0;
+          font-family: 'Arial Black', sans-serif;
+        }
+        .num-actions {
+          display: flex;
+          gap: 3px;
+          flex-shrink: 0;
+        }
+        .mini-btn {
+          background: #2a2a2a;
+          border: none;
+          color: #ccc;
+          font-weight: 800;
+          font-size: 0.72rem;
+          padding: 6px 8px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.1s;
+        }
+        .mini-btn:active { transform: scale(0.9); }
+        .mini-btn.sell { background: #2ecc71; color: #0a2418; }
+        .mini-btn.safe { background: #4fc3f7; color: #062a44; }
+
+        .empty-state {
+          text-align: center;
+          padding: 40px 20px;
+          color: #666;
+          font-size: 0.85rem;
+          font-weight: 600;
+          line-height: 1.6;
+        }
+        .empty-state .big { font-size: 3rem; margin-bottom: 10px; display: block; opacity: 0.4; }
+
+        /* ===== УЛУЧШЕНИЯ ===== */
+        .upgrades-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .upgrade-card {
+          background: #1a1a1a;
+          border-radius: 10px;
+          padding: 14px;
+          border-left: 4px solid #f5b800;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          transition: background 0.3s;
+        }
+        .upgrade-card.maxed {
+          opacity: 0.55;
+          border-left-color: #2ecc71;
+        }
+        .upgrade-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+        }
+        .upgrade-name {
+          font-weight: 800;
+          font-size: 0.92rem;
+          color: #f5f5f5;
+        }
+        .upgrade-level {
+          font-size: 0.7rem;
+          font-weight: 900;
+          color: #1a1a1a;
+          background: #f5b800;
+          padding: 3px 8px;
+          border-radius: 4px;
+          white-space: nowrap;
+          text-transform: uppercase;
+        }
+        .upgrade-desc {
+          font-size: 0.78rem;
+          color: #888;
+          font-weight: 600;
+          line-height: 1.4;
+        }
+        .upgrade-desc b { color: #f5b800; }
+        .upgrade-buy {
+          background: #f5b800;
+          border: none;
+          color: #1a1a1a;
+          font-weight: 900;
+          font-size: 0.85rem;
+          padding: 11px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.1s;
+          font-family: inherit;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          box-shadow: 0 4px 0 #8a6a0a;
+        }
+        .upgrade-buy:active:not(:disabled) {
+          transform: translateY(3px);
+          box-shadow: 0 1px 0 #8a6a0a;
+        }
+        .upgrade-buy:disabled {
+          background: #2a2a2a;
+          box-shadow: 0 4px 0 #111;
+          color: #555;
+          cursor: not-allowed;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+          position: fixed;
+          bottom: 24px;
+          left: 50%;
+          transform: translateX(-50%) translateY(120px);
+          background: #1a1a1a;
+          border: 2px solid #f5b800;
+          color: #f5b800;
+          padding: 13px 24px;
+          border-radius: 8px;
+          font-weight: 900;
+          font-size: 0.9rem;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 30px rgba(245,184,0,0.3);
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+          z-index: 200;
+          pointer-events: none;
+          text-align: center;
+          max-width: 90vw;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ===== ЧАСТИЦЫ ===== */
+        .particles {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: 90;
+          overflow: hidden;
+        }
+        .particle {
+          position: absolute;
+          font-size: 1.8rem;
+          animation: particleFly 2s ease-out forwards;
+          opacity: 0;
+        }
+        @keyframes particleFly {
+          0% { opacity: 1; transform: translate(0,0) scale(0.5); }
+          100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.5) rotate(var(--rot)); }
+        }
+
+        /* ===== МЕДИА-ЗАПРОСЫ ===== */
+        @media (max-width: 480px) {
+          h1 { font-size: 1.1rem; }
+          h1 .tag { font-size: 0.5rem; padding: 2px 6px; }
+          .balance-value { font-size: 1.4rem; }
+          .plate-text { font-size: 2.2rem; letter-spacing: 2px; }
+          .plate-region .region-num { font-size: 1.1rem; }
+          .plate-region .region-num.short { font-size: 1.4rem; }
+          .plate-region .region-num.long { font-size: 0.9rem; }
+          .plate-region .region-top { font-size: 0.42rem; }
+          .plate-flag .rus { font-size: 0.42rem; }
+          .tab { font-size: 0.62rem; padding: 9px 1px; }
+          .app { padding: 16px 12px 18px; border-radius: 18px; }
+          .stat-mini { font-size: 0.62rem; gap: 6px; }
+          .num-text { font-size: 0.72rem; }
+          .num-price { font-size: 0.75rem; }
+          .mini-plate { min-width: 80px; }
+          .mini-plate .mp-code { font-size: 0.62rem; }
+          .mini-btn { padding: 5px 6px; font-size: 0.65rem; }
+          .reveal-title { font-size: 1.4rem; }
+          .reveal-price { font-size: 1.3rem; }
+          .reveal-ops { font-size: 0.9rem; }
+          .theme-btn { font-size: 0.72rem; padding: 6px 8px; }
+        }
+
+        /* ============================================
+           СВЕТЛАЯ ТЕМА — управляется классом .light-mode
+           (принудительный ручной переключатель)
+        ============================================ */
+        body.light-mode {
+          background:
+            repeating-linear-gradient(45deg, #d8d8d8 0px, #d8d8d8 20px, #e5e5e5 20px, #e5e5e5 40px),
+            #eee;
+          color: #1a1a1a;
+        }
+        body.light-mode .app {
+          background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+          color: #1a1a1a;
+          box-shadow:
+            0 30px 60px rgba(0,0,0,0.15),
+            0 0 0 3px #f5b800,
+            0 0 0 6px #1a1a1a,
+            0 0 60px rgba(245,184,0,0.2);
+        }
+        body.light-mode h1 { color: #b88a00; text-shadow: none; }
+        body.light-mode .icon-btn {
+          background: #fff;
+          border-color: #d4a017;
+          color: #b88a00;
+        }
+        body.light-mode .icon-btn:active {
+          background: #f5b800;
+          color: #1a1a1a;
+        }
+        body.light-mode .balance-box { background: #f5f5f5; border-color: #ddd; }
+        body.light-mode .balance-label { color: #666; }
+        body.light-mode .stat-mini { color: #666; }
+        body.light-mode .stat-mini span b { color: #b88a00; }
+        body.light-mode .tabs { background: #f0f0f0; border-color: #ddd; }
+        body.light-mode .tab { color: #666; }
+        body.light-mode .tab.active { background: #f5b800; color: #1a1a1a; }
+        body.light-mode .collection-title { color: #b88a00; }
+        body.light-mode .collection-count { color: #666; }
+        body.light-mode .bulk-btn { background: #f5f5f5; border-color: #ccc; color: #555; }
+        body.light-mode .bulk-btn.sell { background: #e8f8ee; border-color: #2ecc71; color: #1a8a4a; }
+        body.light-mode .bulk-btn.safe { background: #e8f4fc; border-color: #4fc3f7; color: #0288d1; }
+        body.light-mode .bulk-btn:disabled { background: #eee; border-color: #ddd; color: #aaa; }
+        body.light-mode .num-item { background: #f5f5f5; }
+        body.light-mode .num-item.rarity-legendary { background: linear-gradient(90deg, #fff5d6, #f5f5f5); }
+        body.light-mode .num-text { color: #1a1a1a; }
+        body.light-mode .mini-btn { background: #e0e0e0; color: #555; }
+        body.light-mode .empty-state { color: #888; }
+        body.light-mode .upgrade-card { background: #f5f5f5; }
+        body.light-mode .upgrade-name { color: #1a1a1a; }
+        body.light-mode .upgrade-desc { color: #666; }
+        body.light-mode .upgrade-buy:disabled { background: #e0e0e0; color: #aaa; box-shadow: 0 4px 0 #ccc; }
+        body.light-mode .tap-hint { color: #b88a00; background: rgba(245,184,0,0.12); border-color: #d4a017; }
+        body.light-mode .tap-hint .cost { color: #1a1a1a; }
+        body.light-mode .hint-text { color: #666; }
+        body.light-mode .hint-text b { color: #b88a00; }
+        body.light-mode .plate-info .ops { color: #555; }
+        body.light-mode .dark-overlay { background: rgba(0,0,0,0.9); }
+        body.light-mode .toast {
+          background: #fff;
+          border-color: #b88a00;
+          color: #b88a00;
+        }
+        body.light-mode .num-item .num-price { color: #b88a00; }
+
+        /* Если пользователь не выбирал тему — уважаем системную */
+        @media (prefers-color-scheme: light) {
+          body:not(.dark-mode):not(.light-mode) {
+            background:
+              repeating-linear-gradient(45deg, #d8d8d8 0px, #d8d8d8 20px, #e5e5e5 20px, #e5e5e5 40px),
+              #eee;
+            color: #1a1a1a;
+          }
+          body:not(.dark-mode):not(.light-mode) .app {
+            background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+            color: #1a1a1a;
+            box-shadow:
+              0 30px 60px rgba(0,0,0,0.15),
+              0 0 0 3px #f5b800,
+              0 0 0 6px #1a1a1a,
+              0 0 60px rgba(245,184,0,0.2);
+          }
+          body:not(.dark-mode):not(.light-mode) h1 { color: #b88a00; text-shadow: none; }
+          body:not(.dark-mode):not(.light-mode) .icon-btn { background: #fff; border-color: #d4a017; color: #b88a00; }
+          body:not(.dark-mode):not(.light-mode) .balance-box { background: #f5f5f5; border-color: #ddd; }
+          body:not(.dark-mode):not(.light-mode) .balance-label { color: #666; }
+          body:not(.dark-mode):not(.light-mode) .stat-mini { color: #666; }
+          body:not(.dark-mode):not(.light-mode) .stat-mini span b { color: #b88a00; }
+          body:not(.dark-mode):not(.light-mode) .tabs { background: #f0f0f0; border-color: #ddd; }
+          body:not(.dark-mode):not(.light-mode) .tab { color: #666; }
+          body:not(.dark-mode):not(.light-mode) .collection-title { color: #b88a00; }
+          body:not(.dark-mode):not(.light-mode) .collection-count { color: #666; }
+          body:not(.dark-mode):not(.light-mode) .bulk-btn { background: #f5f5f5; border-color: #ccc; color: #555; }
+          body:not(.dark-mode):not(.light-mode) .bulk-btn.sell { background: #e8f8ee; border-color: #2ecc71; color: #1a8a4a; }
+          body:not(.dark-mode):not(.light-mode) .bulk-btn.safe { background: #e8f4fc; border-color: #4fc3f7; color: #0288d1; }
+          body:not(.dark-mode):not(.light-mode) .bulk-btn:disabled { background: #eee; border-color: #ddd; color: #aaa; }
+          body:not(.dark-mode):not(.light-mode) .num-item { background: #f5f5f5; }
+          body:not(.dark-mode):not(.light-mode) .num-item.rarity-legendary { background: linear-gradient(90deg, #fff5d6, #f5f5f5); }
+          body:not(.dark-mode):not(.light-mode) .num-text { color: #1a1a1a; }
+          body:not(.dark-mode):not(.light-mode) .mini-btn { background: #e0e0e0; color: #555; }
+          body:not(.dark-mode):not(.light-mode) .empty-state { color: #888; }
+          body:not(.dark-mode):not(.light-mode) .upgrade-card { background: #f5f5f5; }
+          body:not(.dark-mode):not(.light-mode) .upgrade-name { color: #1a1a1a; }
+          body:not(.dark-mode):not(.light-mode) .upgrade-desc { color: #666; }
+          body:not(.dark-mode):not(.light-mode) .upgrade-buy:disabled { background: #e0e0e0; color: #aaa; box-shadow: 0 4px 0 #ccc; }
+          body:not(.dark-mode):not(.light-mode) .tap-hint { color: #b88a00; background: rgba(245,184,0,0.12); border-color: #d4a017; }
+          body:not(.dark-mode):not(.light-mode) .tap-hint .cost { color: #1a1a1a; }
+          body:not(.dark-mode):not(.light-mode) .hint-text { color: #666; }
+          body:not(.dark-mode):not(.light-mode) .hint-text b { color: #b88a00; }
+          body:not(.dark-mode):not(.light-mode) .plate-info .ops { color: #555; }
+          body:not(.dark-mode):not(.light-mode) .dark-overlay { background: rgba(0,0,0,0.9); }
+          body:not(.dark-mode):not(.light-mode) .toast { background: #fff; border-color: #b88a00; color: #b88a00; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <header>
+        <h1>🚗 АВТО-ГЕН <span class="tag">RU</span></h1>
+        <div class="header-actions">
+            <button class="icon-btn theme-btn" id="themeToggle" title="Переключить тему">☰ Тема</button>
+            <button class="icon-btn" id="resetBtn" title="Начать заново">🔄</button>
+        </div>
+    </header>
+
+    <div class="balance-box">
+        <div>
+            <div class="balance-label">Баланс</div>
+            <div class="balance-value" id="balanceDisplay">10 000 ₽</div>
+        </div>
+        <div class="stat-mini">
+            <span>🎲 Ген: <b id="genCount">0</b></span>
+            <span>📦 Колл: <b id="collCount">0/50</b></span>
+            <span>💰 Зараб: <b id="earnedDisplay">0 ₽</b></span>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="main">🚗 НОМЕР</button>
+        <button class="tab" data-tab="collection">📦 Колл <span id="collBadge"></span></button>
+        <button class="tab" data-tab="safe">🔐 Сейф <span id="safeBadge"></span></button>
+        <button class="tab" data-tab="upgrades">⚙️ Ап</button>
+    </div>
+
+    <div class="panel active" id="panel-main">
+        <div class="plate-scene">
+            <div class="plate-wrap" id="plateWrap">
+                <div class="plate empty" id="plate">
+                    <div class="plate-flag">
+                        <div class="flag">
+                            <div class="white"></div>
+                            <div class="blue"></div>
+                            <div class="red"></div>
+                        </div>
+                        <div class="rus">RUS</div>
+                    </div>
+                    <div class="plate-main" id="plateMain">
+                        НАЖМИ НА НОМЕР
+                    </div>
+                    <div class="plate-region" style="display:none;">
+                        <div class="region-top">RUS</div>
+                        <div class="region-num" id="plateRegion">77</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="plate-info" id="plateInfo"></div>
+
+            <div class="tap-hint" id="tapHint">
+                👆 Тапай по номеру · Генерация <span class="cost" id="genCostHint">3 000 ₽</span>
+            </div>
+
+            <div class="hint-text">
+                Номера автоматом летят в <b>📦 Коллекцию</b>.<br>
+                Там их можно продать, отправить в сейф или убрать.
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" id="panel-collection">
+        <div class="collection-header">
+            <div>
+                <div class="collection-title">📦 Коллекция</div>
+                <div class="collection-count" id="collCountText">0 / 50</div>
+            </div>
+            <div class="bulk-btns">
+                <button class="bulk-btn sell" id="sellAllBtn">💰 Все</button>
+                <button class="bulk-btn safe" id="safeAllBtn">🔐 В сейф</button>
+                <button class="bulk-btn" id="clearAllBtn">🗑️</button>
+            </div>
+        </div>
+        <div class="collection-list" id="collectionList"></div>
+    </div>
+
+    <div class="panel" id="panel-safe">
+        <div class="collection-header">
+            <div>
+                <div class="collection-title">🔐 Сейф</div>
+                <div class="collection-count" id="safeCountText">0 / 5</div>
+            </div>
+            <div class="bulk-btns">
+                <button class="bulk-btn sell" id="sellAllSafeBtn">💰 Продать всё</button>
+            </div>
+        </div>
+        <div class="safe-list" id="safeList"></div>
+    </div>
+
+    <div class="panel" id="panel-upgrades">
+        <div class="upgrades-list" id="upgradesList"></div>
+    </div>
+</div>
+
+<!-- ===== ОВЕРЛЕЙ ДЛЯ РЕДКИХ НОМЕРОВ ===== -->
+<div class="dark-overlay" id="darkOverlay">
+    <div class="reveal-block" id="revealBlock">
+        <div class="reveal-plate" id="revealPlate"></div>
+        <div class="reveal-title" id="revealTitle"></div>
+        <div class="reveal-ops" id="revealOps"></div>
+        <div class="reveal-price" id="revealPrice"></div>
+        <div class="reveal-continue" id="revealContinue">нажми, чтобы продолжить</div>
+    </div>
+</div>
+
+<div class="particles" id="particles"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+    (function(){
+      'use strict';
+
+      const SAVE_KEY = 'autoGen_v2';
+      const THEME_KEY = 'autoGen_theme';
+      const START_BALANCE = 10000;
+      const GEN_COST = 3000;
+      const START_COLLECTION_SIZE = 50;
+      const START_SAFE_SIZE = 5;
+
+      let state = {
+        balance: START_BALANCE,
+        genCount: 0,
+        totalEarned: 0,
+        lastPlate: null,
+        collection: [],
+        safe: [],
+        upgrades: {
+          collSize: 0, safeSlots: 0, betterChance: 0,
+          luckBoost: 0, sellBonus: 0, discount: 0,
+        },
+      };
+
+      const UPGRADES = [
+        { id: 'collSize', name: '📦 Расширить коллекцию', desc: (lv) => `+10 слотов (сейчас: ${START_COLLECTION_SIZE + lv * 10})`, baseCost: 5000, mult: 1.8, maxLevel: 15 },
+        { id: 'safeSlots', name: '🔐 Расширить сейф', desc: (lv) => `+3 слота (сейчас: ${START_SAFE_SIZE + lv * 3})`, baseCost: 8000, mult: 1.9, maxLevel: 12 },
+        { id: 'betterChance', name: '🍀 Удача генерации', desc: (lv) => `+${lv * 5}% шанс красивых номеров`, baseCost: 10000, mult: 1.9, maxLevel: 15 },
+        { id: 'luckBoost', name: '💎 Оценщик', desc: (lv) => `+${lv * 10}% к цене номеров`, baseCost: 12000, mult: 2.0, maxLevel: 15 },
+        { id: 'sellBonus', name: '🤝 Связи на рынке', desc: (lv) => `+${lv * 8}% к цене продажи`, baseCost: 10000, mult: 1.95, maxLevel: 12 },
+        { id: 'discount', name: '📉 Оптовая закупка', desc: (lv) => `-${lv * 4}% к цене генерации`, baseCost: 15000, mult: 2.1, maxLevel: 10 },
+      ];
+
+      const els = {
+        balance: document.getElementById('balanceDisplay'),
+        genCount: document.getElementById('genCount'),
+        collCount: document.getElementById('collCount'),
+        earned: document.getElementById('earnedDisplay'),
+        plateWrap: document.getElementById('plateWrap'),
+        plate: document.getElementById('plate'),
+        plateMain: document.getElementById('plateMain'),
+        plateRegion: document.getElementById('plateRegion'),
+        plateInfo: document.getElementById('plateInfo'),
+        genCostHint: document.getElementById('genCostHint'),
+        tapHint: document.getElementById('tapHint'),
+        tabs: document.querySelectorAll('.tab'),
+        panels: document.querySelectorAll('.panel'),
+        collectionList: document.getElementById('collectionList'),
+        collCountText: document.getElementById('collCountText'),
+        collBadge: document.getElementById('collBadge'),
+        sellAllBtn: document.getElementById('sellAllBtn'),
+        safeAllBtn: document.getElementById('safeAllBtn'),
+        clearAllBtn: document.getElementById('clearAllBtn'),
+        safeList: document.getElementById('safeList'),
+        safeCountText: document.getElementById('safeCountText'),
+        safeBadge: document.getElementById('safeBadge'),
+        sellAllSafeBtn: document.getElementById('sellAllSafeBtn'),
+        upgradesList: document.getElementById('upgradesList'),
+        toast: document.getElementById('toast'),
+        resetBtn: document.getElementById('resetBtn'),
+        themeToggle: document.getElementById('themeToggle'),
+        darkOverlay: document.getElementById('darkOverlay'),
+        revealBlock: document.getElementById('revealBlock'),
+        revealPlate: document.getElementById('revealPlate'),
+        revealTitle: document.getElementById('revealTitle'),
+        revealOps: document.getElementById('revealOps'),
+        revealPrice: document.getElementById('revealPrice'),
+        revealContinue: document.getElementById('revealContinue'),
+        particles: document.getElementById('particles'),
+      };
+
+      // ===== ТЕМА =====
+      function applyTheme(theme) {
+        document.body.classList.remove('light-mode', 'dark-mode');
+        if (theme === 'light') {
+          document.body.classList.add('light-mode');
+          els.themeToggle.textContent = '☀ Светлая';
+        } else {
+          document.body.classList.add('dark-mode');
+          els.themeToggle.textContent = '☾ Тёмная';
+        }
+        try { localStorage.setItem(THEME_KEY, theme); } catch(e) {}
+      }
+
+      function initTheme() {
+        let saved = null;
+        try { saved = localStorage.getItem(THEME_KEY); } catch(e) {}
+        if (saved === 'light' || saved === 'dark') {
+          applyTheme(saved);
+        } else {
+          const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+          applyTheme(prefersLight ? 'light' : 'dark');
+        }
+      }
+
+      function toggleTheme() {
+        const isLight = document.body.classList.contains('light-mode');
+        applyTheme(isLight ? 'dark' : 'light');
+      }
+
+      // ===== ВСПОМОГАТЕЛЬНЫЕ =====
+      function fmt(n) { return Math.floor(n).toLocaleString('ru-RU') + ' ₽'; }
+      function getCollectionCapacity() { return START_COLLECTION_SIZE + state.upgrades.collSize * 10; }
+      function getSafeCapacity() { return START_SAFE_SIZE + state.upgrades.safeSlots * 3; }
+      function getGenCost() { return Math.floor(GEN_COST * (1 - state.upgrades.discount * 0.04)); }
+      function getSellPrice(price) { return Math.floor(price * (1 + state.upgrades.sellBonus * 0.08)); }
+
+      let toastTimer = null;
+      function showToast(msg) {
+        els.toast.textContent = msg;
+        els.toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2500);
+      }
+
+      // ===== РЕГИОНЫ =====
+      const REGIONS = [
+        { code: '77', weight: 18 }, { code: '99', weight: 8 }, { code: '97', weight: 6 },
+        { code: '177', weight: 3 }, { code: '199', weight: 2 }, { code: '197', weight: 2 },
+        { code: '78', weight: 10 }, { code: '98', weight: 5 }, { code: '178', weight: 2 },
+        { code: '50', weight: 8 }, { code: '90', weight: 5 }, { code: '150', weight: 2 }, { code: '750', weight: 1 },
+        { code: '23', weight: 4 }, { code: '93', weight: 3 }, { code: '123', weight: 2 }, { code: '193', weight: 1 },
+        { code: '66', weight: 4 }, { code: '96', weight: 3 }, { code: '196', weight: 2 },
+        { code: '02', weight: 3 }, { code: '102', weight: 2 }, { code: '702', weight: 1 },
+        { code: '16', weight: 3 }, { code: '116', weight: 2 }, { code: '716', weight: 1 },
+        { code: '52', weight: 3 }, { code: '152', weight: 1 },
+        { code: '34', weight: 2 }, { code: '134', weight: 1 },
+        { code: '61', weight: 3 }, { code: '161', weight: 2 }, { code: '761', weight: 1 },
+        { code: '74', weight: 2 }, { code: '174', weight: 1 },
+        { code: '24', weight: 2 }, { code: '124', weight: 1 },
+        { code: '54', weight: 3 }, { code: '154', weight: 1 },
+        { code: '59', weight: 2 }, { code: '159', weight: 1 },
+        { code: '64', weight: 2 }, { code: '164', weight: 1 },
+        { code: '26', weight: 2 }, { code: '126', weight: 1 },
+        { code: '63', weight: 2 }, { code: '163', weight: 1 },
+        { code: '72', weight: 2 }, { code: '172', weight: 1 },
+      ];
+
+      function pickRegion() {
+        const total = REGIONS.reduce((a, c) => a + c.weight, 0);
+        let r = Math.random() * total;
+        for (const c of REGIONS) { r -= c.weight; if (r <= 0) return c; }
+        return REGIONS[0];
+      }
+
+      const BLAT_SERIES = [
+        { series: 'АМР', region: '77', name: 'АМР 77 (Правительство)' },
+        { series: 'АМР', region: '97', name: 'АМР 97 (Правительство)' },
+        { series: 'АМР', region: '99', name: 'АМР 99 (Правительство)' },
+        { series: 'ЕКХ', region: '77', name: 'ЕКХ 77 (ФСО)' },
+        { series: 'ЕКХ', region: '99', name: 'ЕКХ 99 (ФСО)' },
+        { series: 'АММ', region: '77', name: 'АММ 77' },
+        { series: 'ВОО', region: '77', name: 'ВОО 77' },
+        { series: 'СММ', region: '77', name: 'СММ 77' },
+        { series: 'МММ', region: '77', name: 'МММ 77' },
+        { series: 'ККХ', region: '77', name: 'ККХ 77' },
+        { series: 'АКР', region: '77', name: 'АКР 77' },
+        { series: 'ВКР', region: '77', name: 'ВКР 77' },
+        { series: 'ООО', region: '77', name: 'ООО 77' },
+      ];
+
+      const BLAT_NUMBERS = ['001', '002', '003', '005', '007', '008', '009', '010', '011', '100', '111', '222', '333', '444', '555', '666', '777', '888', '999'];
+
+      const PLATE_LETTERS = ['А', 'В', 'Е', 'К', 'М', 'Н', 'О', 'Р', 'С', 'Т', 'У', 'Х'];
+
+      // ===== ГЕНЕРАЦИЯ =====
+      function generateRawPlate() {
+        const blatChance = 3 + state.upgrades.betterChance * 0.5;
+        if (Math.random() * 100 < blatChance) {
+          return generateBlatPlate();
+        }
+        return generateRegularPlate();
+      }
+
+      function generateBlatPlate() {
+        const blat = BLAT_SERIES[Math.floor(Math.random() * BLAT_SERIES.length)];
+        const num = BLAT_NUMBERS[Math.floor(Math.random() * BLAT_NUMBERS.length)];
+        const series = blat.series;
+        const firstLetter = series[0];
+        const lastTwo = series.slice(1);
+        const middleLetter = PLATE_LETTERS[Math.floor(Math.random() * PLATE_LETTERS.length)];
+        const code = firstLetter + num + middleLetter + lastTwo;
+        return {
+          code, region: blat.region, letters: [firstLetter, middleLetter, lastTwo[0], lastTwo[1]],
+          digits: num, isBlat: true, blatName: blat.name, series: series,
+        };
+      }
+
+      function generateRegularPlate() {
+        const l1 = PLATE_LETTERS[Math.floor(Math.random() * PLATE_LETTERS.length)];
+        const l2 = PLATE_LETTERS[Math.floor(Math.random() * PLATE_LETTERS.length)];
+        const l3 = PLATE_LETTERS[Math.floor(Math.random() * PLATE_LETTERS.length)];
+        const digits = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+        const region = pickRegion();
+        return {
+          code: l1 + digits + l2 + l3,
+          region: region.code, letters: [l1, l2, l3], digits, isBlat: false,
+        };
+      }
+
+      // ===== ОЦЕНКА =====
+      function evaluatePlate(raw) {
+        const ops = [];
+        let score = 0;
+        const digits = raw.digits;
+        const letters = raw.letters;
+        const region = raw.region;
+
+        if (raw.isBlat) {
+          score = 100000;
+          ops.push(`БЛАТНАЯ СЕРИЯ ${raw.series}`);
+          ops.push(raw.blatName);
+          if (digits[0] === digits[1] && digits[1] === digits[2]) {
+            score += 50000;
+            ops.push(`${digits}`);
+          }
+          if (digits === '777') { score += 100000; ops.push('ТРИ СЕМЁРКИ'); }
+          if (digits === '001' || digits === '002' || digits === '003' || digits === '007') {
+            score += 30000;
+            ops.push(`VIP ${digits}`);
+          }
+          const luckBonus = 1 + state.upgrades.betterChance * 0.05;
+          let price = (5000000 + score * 50) * luckBonus * (1 + state.upgrades.luckBoost * 0.10) * (0.9 + Math.random() * 0.2);
+          return { rarity: 'legendary', tier: '👑 ФБ (Федеральный)', price: Math.floor(price), ops, score: Math.floor(score), isBlat: true };
+        }
+
+        if (letters[0] === letters[1] && letters[1] === letters[2]) {
+          score += 3000;
+          ops.push(`буквы ${letters[0]}${letters[1]}${letters[2]}`);
+        } else if (letters[0] === letters[1] || letters[1] === letters[2] || letters[0] === letters[2]) {
+          score += 300;
+          ops.push('пара букв');
+        }
+
+        if (digits[0] === digits[1] && digits[1] === digits[2]) {
+          const d = digits[0];
+          let bonus = 5000;
+          if (d === '7' || d === '8' || d === '9') bonus = 15000;
+          else if (d === '0') bonus = 8000;
+          else if (d === '1') bonus = 6000;
+          score += bonus;
+          ops.push(`${digits}`);
+        } else if (digits[0] === '0' && digits[1] === '0' && digits[2] !== '0') {
+          score += 8000;
+          ops.push(`00${digits[2]}`);
+        } else if (digits[1] === '0' && digits[2] === '0' && digits[0] !== '0') {
+          score += 4000;
+          ops.push(`${digits[0]}00`);
+        } else if (digits[0] === digits[2] && digits[0] !== digits[1]) {
+          score += 500;
+          ops.push(`палиндром ${digits}`);
+        } else {
+          const d0 = parseInt(digits[0], 10), d1 = parseInt(digits[1], 10), d2 = parseInt(digits[2], 10);
+          if ((d0 + 1 === d1 && d1 + 1 === d2) || (d0 - 1 === d1 && d1 - 1 === d2)) {
+            score += 800;
+            ops.push(`последовательность ${digits}`);
+          } else if (digits[0] === digits[1] || digits[1] === digits[2]) {
+            const pair = digits[0] === digits[1] ? digits[0] + digits[1] : digits[1] + digits[2];
+            let bonus = 200;
+            if (pair === '77' || pair === '88' || pair === '99') bonus = 800;
+            score += bonus;
+            ops.push(`пара ${pair}`);
+          }
+        }
+
+        const topRegions = ['77', '99', '97', '177', '199', '197', '78', '98', '178'];
+        if (topRegions.includes(region)) {
+          score += 500;
+          ops.push(`регион ${region}`);
+        }
+
+        const allLettersSame = letters[0] === letters[1] && letters[1] === letters[2];
+        const allDigitsSame = digits[0] === digits[1] && digits[1] === digits[2];
+        if (allLettersSame && allDigitsSame) {
+          score += 50000;
+          ops.push('СУПЕР-КОМБО');
+        }
+
+        const luckBonus = 1 + state.upgrades.betterChance * 0.05;
+
+        let rarity, tier, basePrice;
+        if (score >= 40000) { rarity = 'legendary'; tier = '💎 ЛЕГЕНДА'; basePrice = 800000 + score * 40; }
+        else if (score >= 8000) { rarity = 'epic'; tier = '🔥 ЭПИК'; basePrice = 150000 + score * 25; }
+        else if (score >= 2000) { rarity = 'rare'; tier = '💜 РЕДКИЙ'; basePrice = 40000 + score * 15; }
+        else if (score >= 400) { rarity = 'good'; tier = '💚 ХОРОШИЙ'; basePrice = 7000 + score * 10; }
+        else { rarity = 'common'; tier = '⚪ ОБЫЧНЫЙ'; basePrice = 1800 + score * 8; }
+
+        let price = basePrice * luckBonus * (1 + state.upgrades.luckBoost * 0.10) * (0.9 + Math.random() * 0.2);
+        return { rarity, tier, price: Math.floor(price), ops, score: Math.floor(score) };
+      }
+
+      // ===== ОТРИСОВКА НОМЕРА =====
+      function buildPlateHTML(item, forReveal) {
+        const isShortRegion = item.region.length === 2;
+        const regionClass = isShortRegion ? 'short' : (item.region.length >= 3 ? 'long' : '');
+        const code = item.code;
+        const firstLetter = code[0];
+        const digits = code.slice(1, 4);
+        const rest = code.slice(4);
+        return `
+          <div class="plate-flag">
+            <div class="flag">
+              <div class="white"></div>
+              <div class="blue"></div>
+              <div class="red"></div>
+            </div>
+            <div class="rus">RUS</div>
+          </div>
+          <div class="plate-main">
+            <div class="plate-text">
+              <span class="grp">${firstLetter}</span>
+              <span class="grp">${digits}</span>
+              <span class="grp">${rest}</span>
+            </div>
+          </div>
+          <div class="plate-region">
+            <div class="region-top">RUS</div>
+            <div class="region-num ${regionClass}">${item.region}</div>
+          </div>
+        `;
+      }
+
+      function renderPlate(item) {
+        if (!item) {
+          els.plate.className = 'plate empty';
+          els.plate.innerHTML = `
+            <div class="plate-flag">
+              <div class="flag"><div class="white"></div><div class="blue"></div><div class="red"></div></div>
+              <div class="rus">RUS</div>
+            </div>
+            <div class="plate-main">НАЖМИ НА НОМЕР</div>
+            <div class="plate-region" style="display:none;"><div class="region-num">77</div></div>
+          `;
+          els.plateWrap.className = 'plate-wrap';
+          els.plateInfo.innerHTML = '';
+          return;
+        }
+        els.plate.className = 'plate';
+        els.plate.innerHTML = buildPlateHTML(item);
+        els.plateWrap.className = 'plate-wrap rarity-' + item.rarity;
+
+        const opsText = item.ops.length ? item.ops.join(' · ') : 'обычный';
+        els.plateInfo.innerHTML = `
+          <div class="tier ${item.rarity}" id="tierEl">${item.tier}</div>
+          <div class="ops" id="opsEl">${opsText}</div>
+          <div class="price" id="priceEl">${fmt(getSellPrice(item.price))}</div>
+        `;
+        if (item.rarity === 'epic' || item.rarity === 'legendary') {
+          setTimeout(() => {
+            document.getElementById('tierEl')?.classList.add('show');
+            document.getElementById('opsEl')?.classList.add('show');
+            document.getElementById('priceEl')?.classList.add('show');
+          }, 100);
+        } else {
+          document.getElementById('tierEl')?.classList.add('show');
+          document.getElementById('opsEl')?.classList.add('show');
+          document.getElementById('priceEl')?.classList.add('show');
+        }
+      }
+
+      // ===== АНИМАЦИЯ РЕДКОГО НОМЕРА =====
+      let isRevealing = false;
+
+      function showRevealAnimation(item) {
+        isRevealing = true;
+        els.tapHint.classList.add('disabled');
+
+        els.revealPlate.className = 'reveal-plate';
+        els.revealPlate.innerHTML = `<div class="plate-wrap rarity-${item.rarity}" style="animation:none;">
+          <div class="plate">${buildPlateHTML(item)}</div>
+        </div>`;
+
+        els.revealTitle.className = 'reveal-title ' + item.rarity;
+        els.revealTitle.textContent = item.rarity === 'legendary' ? (item.isBlat ? '👑 ФБ НОМЕР' : '💎 ЛЕГЕНДА') : '🔥 ЭПИК';
+
+        const opsText = item.ops.length ? item.ops.join(' • ') : '';
+        els.revealOps.textContent = opsText;
+        els.revealPrice.textContent = fmt(getSellPrice(item.price));
+
+        [els.revealTitle, els.revealOps, els.revealPrice, els.revealContinue].forEach(el => el.classList.remove('show'));
+
+        els.darkOverlay.classList.add('show');
+
+        setTimeout(() => els.revealTitle.classList.add('show'), 500);
+        setTimeout(() => els.revealOps.classList.add('show'), 700);
+        setTimeout(() => els.revealPrice.classList.add('show'), 900);
+        setTimeout(() => els.revealContinue.classList.add('show'), 1400);
+
+        if (item.rarity === 'legendary') spawnParticles();
+      }
+
+      function hideRevealAnimation() {
+        els.darkOverlay.classList.remove('show');
+        [els.revealTitle, els.revealOps, els.revealPrice, els.revealContinue].forEach(el => el.classList.remove('show'));
+        setTimeout(() => {
+          isRevealing = false;
+          els.tapHint.classList.remove('disabled');
+        }, 500);
+      }
+
+      function spawnParticles() {
+        const emojis = ['🚗', '🏎️', '🚙', '⭐', '✨', '🌟', '💫', '🎉', '💎', '👑'];
+        for (let i = 0; i < 25; i++) {
+          const p = document.createElement('div');
+          p.className = 'particle';
+          p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+          p.style.left = (25 + Math.random() * 50) + '%';
+          p.style.top = '40%';
+          p.style.setProperty('--dx', (Math.random() - 0.5) * 700 + 'px');
+          p.style.setProperty('--dy', (-Math.random() * 500 - 200) + 'px');
+          p.style.setProperty('--rot', (Math.random() - 0.5) * 720 + 'deg');
+          p.style.animationDelay = (Math.random() * 0.3) + 's';
+          els.particles.appendChild(p);
+          setTimeout(() => p.remove(), 2500);
+        }
+      }
+
+      // ===== ГЕНЕРАЦИЯ =====
+      function generatePlate() {
+        if (isRevealing) return;
+        const cost = getGenCost();
+        if (state.balance < cost) { showToast('❌ Недостаточно средств'); return; }
+        const cap = getCollectionCapacity();
+        if (state.collection.length >= cap) { showToast('❌ Коллекция переполнена'); return; }
+
+        state.balance -= cost;
+        state.genCount++;
+
+        const raw = generateRawPlate();
+        const ev = evaluatePlate(raw);
+        const item = {
+          code: raw.code,
+          region: raw.region,
+          rarity: ev.rarity,
+          tier: ev.tier,
+          price: ev.price,
+          ops: ev.ops,
+          isBlat: !!ev.isBlat,
+        };
+
+        state.collection.push(item);
+        state.lastPlate = item;
+
+        updateUI();
+        save();
+
+        if (item.rarity === 'epic' || item.rarity === 'legendary') {
+          renderPlate(item);
+          showRevealAnimation(item);
+        } else {
+          renderPlate(item);
+        }
+      }
+
+      // ===== UI =====
+      function updateUI() {
+        els.balance.textContent = fmt(state.balance);
+        els.genCount.textContent = state.genCount;
+        els.earned.textContent = fmt(state.totalEarned);
+
+        const collCap = getCollectionCapacity();
+        const safeCap = getSafeCapacity();
+        els.collCount.textContent = `${state.collection.length}/${collCap}`;
+        els.collCountText.textContent = `${state.collection.length} / ${collCap}`;
+        els.safeCountText.textContent = `${state.safe.length} / ${safeCap}`;
+        els.genCostHint.textContent = fmt(getGenCost());
+
+        els.collBadge.textContent = state.collection.length > 0 ? '· ' + state.collection.length : '';
+        els.safeBadge.textContent = state.safe.length > 0 ? '· ' + state.safe.length : '';
+
+        els.sellAllBtn.disabled = state.collection.length === 0;
+        els.safeAllBtn.disabled = state.collection.length === 0 || state.safe.length >= safeCap;
+        els.clearAllBtn.disabled = state.collection.length === 0;
+        els.sellAllSafeBtn.disabled = state.safe.length === 0;
+
+        renderCollection();
+        renderSafe();
+        renderUpgrades();
+      }
+
+      function buildMiniPlate(item) {
+        const code = item.code;
+        const firstLetter = code[0];
+        const digits = code.slice(1, 4);
+        const rest = code.slice(4);
+        return `
+          <div class="mp-flag">
+            <div class="w"></div><div class="b"></div><div class="r"></div>
+          </div>
+          <div class="mp-body">
+            <div class="mp-code">${firstLetter}${digits}${rest}</div>
+            <div class="mp-region">${item.region}</div>
+          </div>
+        `;
+      }
+
+      function renderCollection() {
+        if (!state.collection.length) {
+          els.collectionList.innerHTML = `
+            <div class="empty-state">
+              <span class="big">📦</span>
+              Коллекция пуста.<br>Тапай по номеру, чтобы нагенерировать!
+            </div>
+          `;
+          return;
+        }
+        const sorted = state.collection.map((item, idx) => ({ item, idx })).sort((a, b) => b.item.price - a.item.price);
+
+        els.collectionList.innerHTML = sorted.map(({ item, idx }) => {
+          const opsText = item.ops.length ? item.ops.join(' · ') : 'обычный';
+          return `
+            <div class="num-item rarity-${item.rarity}">
+              <div class="mini-plate">${buildMiniPlate(item)}</div>
+              <div class="num-info">
+                <div class="num-text">${item.tier}</div>
+                <div class="num-meta ${item.rarity}">${opsText}</div>
+              </div>
+              <div class="num-price">${fmt(getSellPrice(item.price))}</div>
+              <div class="num-actions">
+                <button class="mini-btn sell" data-sell="${idx}">💰</button>
+                <button class="mini-btn safe" data-safe="${idx}">🔐</button>
+                <button class="mini-btn" data-remove="${idx}">🗑️</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        els.collectionList.querySelectorAll('[data-sell]').forEach(b => b.addEventListener('click', () => sellFromCollection(parseInt(b.dataset.sell))));
+        els.collectionList.querySelectorAll('[data-safe]').forEach(b => b.addEventListener('click', () => moveToSafe(parseInt(b.dataset.safe))));
+        els.collectionList.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => removeFromCollection(parseInt(b.dataset.remove))));
+      }
+
+      function renderSafe() {
+        if (!state.safe.length) {
+          els.safeList.innerHTML = `
+            <div class="empty-state">
+              <span class="big">🔐</span>
+              Сейф пуст.<br>Отправляй сюда самые ценные номера!
+            </div>
+          `;
+          return;
+        }
+        const sorted = state.safe.map((item, idx) => ({ item, idx })).sort((a, b) => b.item.price - a.item.price);
+
+        els.safeList.innerHTML = sorted.map(({ item, idx }) => `
+          <div class="num-item rarity-${item.rarity}">
+            <div class="mini-plate">${buildMiniPlate(item)}</div>
+            <div class="num-info">
+              <div class="num-text">${item.tier}</div>
+              <div class="num-meta ${item.rarity}">${item.ops.join(' · ') || 'обычный'}</div>
+            </div>
+            <div class="num-price">${fmt(getSellPrice(item.price))}</div>
+            <div class="num-actions">
+              <button class="mini-btn sell" data-sell="${idx}">💰</button>
+              <button class="mini-btn" data-remove="${idx}">🗑️</button>
+            </div>
+          </div>
+        `).join('');
+
+        els.safeList.querySelectorAll('[data-sell]').forEach(b => b.addEventListener('click', () => sellFromSafe(parseInt(b.dataset.sell))));
+        els.safeList.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => removeFromSafe(parseInt(b.dataset.remove))));
+      }
+
+      function renderUpgrades() {
+        els.upgradesList.innerHTML = UPGRADES.map(u => {
+          const lv = state.upgrades[u.id];
+          const maxed = lv >= u.maxLevel;
+          const cost = Math.floor(u.baseCost * Math.pow(u.mult, lv));
+          const canBuy = !maxed && state.balance >= cost;
+          return `
+            <div class="upgrade-card ${maxed ? 'maxed' : ''}">
+              <div class="upgrade-head">
+                <div class="upgrade-name">${u.name}</div>
+                <div class="upgrade-level">${maxed ? 'МАКС' : `ур. ${lv}/${u.maxLevel}`}</div>
+              </div>
+              <div class="upgrade-desc">${u.desc(lv)}</div>
+              <button class="upgrade-buy" data-upgrade="${u.id}" ${!canBuy ? 'disabled' : ''}>
+                ${maxed ? '✅ Максимум' : `Улучшить за ${cost.toLocaleString('ru-RU')} ₽`}
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        els.upgradesList.querySelectorAll('[data-upgrade]').forEach(b => b.addEventListener('click', () => buyUpgrade(b.dataset.upgrade)));
+      }
+
+      // ===== ДЕЙСТВИЯ =====
+      function sellFromCollection(idx) {
+        const item = state.collection[idx]; if (!item) return;
+        const price = getSellPrice(item.price);
+        state.balance += price; state.totalEarned += price;
+        state.collection.splice(idx, 1);
+        showToast(`💰 +${fmt(price)}`);
+        updateUI(); save();
+      }
+      function moveToSafe(idx) {
+        const item = state.collection[idx]; if (!item) return;
+        const cap = getSafeCapacity();
+        if (state.safe.length >= cap) { showToast('❌ Сейф полон!'); return; }
+        state.safe.push(item); state.collection.splice(idx, 1);
+        showToast(`🔐 В сейф (${state.safe.length}/${cap})`);
+        updateUI(); save();
+      }
+      function removeFromCollection(idx) { if (!state.collection[idx]) return; state.collection.splice(idx, 1); updateUI(); save(); }
+      function sellFromSafe(idx) {
+        const item = state.safe[idx]; if (!item) return;
+        const price = getSellPrice(item.price);
+        state.balance += price; state.totalEarned += price;
+        state.safe.splice(idx, 1);
+        showToast(`💰 +${fmt(price)}`);
+        updateUI(); save();
+      }
+      function removeFromSafe(idx) { if (!state.safe[idx]) return; state.safe.splice(idx, 1); updateUI(); save(); }
+
+      function sellAllCollection() {
+        if (!state.collection.length) return;
+        let total = 0;
+        for (const item of state.collection) total += getSellPrice(item.price);
+        state.balance += total; state.totalEarned += total;
+        const count = state.collection.length; state.collection = [];
+        showToast(`💰 ${count} шт. → ${fmt(total)}`);
+        updateUI(); save();
+      }
+      function moveAllToSafe() {
+        if (!state.collection.length) return;
+        const cap = getSafeCapacity();
+        const free = cap - state.safe.length;
+        if (free <= 0) { showToast('❌ Сейф полон!'); return; }
+        state.collection.sort((a, b) => b.price - a.price);
+        const moved = state.collection.splice(0, free);
+        state.safe.push(...moved);
+        showToast(`🔐 ${moved.length} шт. в сейф`);
+        updateUI(); save();
+      }
+      function clearAllCollection() {
+        if (!state.collection.length) return;
+        if (!confirm(`Убрать все ${state.collection.length} номеров?`)) return;
+        state.collection = [];
+        showToast('🗑️ Очищено');
+        updateUI(); save();
+      }
+      function sellAllSafe() {
+        if (!state.safe.length) return;
+        let total = 0;
+        for (const item of state.safe) total += getSellPrice(item.price);
+        state.balance += total; state.totalEarned += total;
+        const count = state.safe.length; state.safe = [];
+        showToast(`💰 ${count} шт. → ${fmt(total)}`);
+        updateUI(); save();
+      }
+      function buyUpgrade(id) {
+        const u = UPGRADES.find(x => x.id === id); if (!u) return;
+        const lv = state.upgrades[id]; if (lv >= u.maxLevel) return;
+        const cost = Math.floor(u.baseCost * Math.pow(u.mult, lv));
+        if (state.balance < cost) { showToast('❌ Недостаточно средств'); return; }
+        state.balance -= cost; state.upgrades[id]++;
+        showToast(`✅ ${u.name}`);
+        updateUI(); save();
+      }
+
+      // ===== СОХРАНЕНИЕ =====
+      function save() {
+        try {
+          localStorage.setItem(SAVE_KEY, JSON.stringify({
+            balance: state.balance, genCount: state.genCount, totalEarned: state.totalEarned,
+            lastPlate: state.lastPlate, collection: state.collection, safe: state.safe, upgrades: state.upgrades,
+          }));
+        } catch (e) {}
+      }
+      function load() {
+        try {
+          const raw = localStorage.getItem(SAVE_KEY); if (!raw) return false;
+          const d = JSON.parse(raw);
+          state.balance = typeof d.balance === 'number' ? d.balance : START_BALANCE;
+          state.genCount = d.genCount || 0; state.totalEarned = d.totalEarned || 0;
+          state.lastPlate = d.lastPlate || null;
+          state.collection = Array.isArray(d.collection) ? d.collection : [];
+          state.safe = Array.isArray(d.safe) ? d.safe : [];
+          if (d.upgrades) for (const k in state.upgrades) if (typeof d.upgrades[k] === 'number') state.upgrades[k] = d.upgrades[k];
+          return true;
+        } catch (e) { return false; }
+      }
+      function fullReset() {
+        if (!confirm('Сбросить весь прогресс? Баланс вернётся к 10 000 ₽.')) return;
+        localStorage.removeItem(SAVE_KEY);
+        state.balance = START_BALANCE; state.genCount = 0; state.totalEarned = 0;
+        state.lastPlate = null; state.collection = []; state.safe = [];
+        for (const k in state.upgrades) state.upgrades[k] = 0;
+        renderPlate(null); updateUI(); save();
+        showToast('🔄 Игра сброшена');
+      }
+
+      // ===== ВКЛАДКИ =====
+      els.tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          if (isRevealing) return;
+          els.tabs.forEach(t => t.classList.remove('active'));
+          els.panels.forEach(p => p.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+          updateUI();
+        });
+      });
+
+      // ===== ОБРАБОТЧИКИ =====
+      els.plate.addEventListener('click', generatePlate);
+      els.sellAllBtn.addEventListener('click', sellAllCollection);
+      els.safeAllBtn.addEventListener('click', moveAllToSafe);
+      els.clearAllBtn.addEventListener('click', clearAllCollection);
+      els.sellAllSafeBtn.addEventListener('click', sellAllSafe);
+      els.resetBtn.addEventListener('click', fullReset);
+      els.themeToggle.addEventListener('click', toggleTheme);
+
+      els.darkOverlay.addEventListener('click', () => {
+        if (els.revealContinue.classList.contains('show')) {
+          hideRevealAnimation();
+        }
+      });
+
+      // ===== ИНИЦИАЛИЗАЦИЯ =====
+      function init() {
+        initTheme();
+        const loaded = load();
+        renderPlate(state.lastPlate);
+        updateUI();
+        if (loaded) {
+          setTimeout(() => showToast('💾 Прогресс загружен'), 400);
+        } else {
+          setTimeout(() => showToast('🚗 Тапай по номеру! Баланс: 10 000 ₽'), 400);
+        }
+        setInterval(save, 10000);
+        window.addEventListener('beforeunload', save);
+      }
+
+      window.addEventListener('load', init);
+    })();
+</script>
+</body>
+</html>
